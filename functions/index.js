@@ -2,55 +2,21 @@
 // for Dialogflow fulfillment library docs, samples, and to report issues
 'use strict';
 
- 
 const functions = require('firebase-functions');
 const {WebhookClient} = require('dialogflow-fulfillment');
 const {Card, Suggestion} = require('dialogflow-fulfillment');
+const {Payload} = require('dialogflow-fulfillment');
 const http = require('http');
-// process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
+process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
  
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
   const agent = new WebhookClient({ request, response });
   console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
   console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
- 
+
   function welcome(agent) {
 
-
-      // return http(options).then(res  => {
-      //     console.log("Menus JSON: " + res);
-          agent.add("Hi! I'm Buffie the Neo Garden Bot!!");
-      //     agent.add(JSON.stringify(res));
-      //     return Promise.resolve("Call to Neo Complete");
-      // });
-
-      // let callback = function(response) {
-      //     var str = '';
-      //     response.on('error', function (err) {
-      //         console.log("HTTP error: " + err);
-      //
-      //     });
-      //     response.on('data', function (chunk) {
-      //         str += chunk;
-      //     });
-      //
-      //     response.on('end', function () {
-      //         console.log("Menus JSON: " + JSON.stringify(str));
-      //         let menus = JSON.parse(str);
-      //         agent.add("Hi! I'm Buffie the Neo Garden Bot!");
-      //     });
-      // };
-      //
-      // let req = http.request(options,callback);
-      // req.end();
-
-      // agent.add(new Card({
-      //     title: "Card Title",
-      //     imageUrl: "https://www.gstatic.com/webp/gallery/4.jpg",
-      //     text: "This is some example text...",
-      //     buttonText: "Button",
-      //     buttonUrl: "https://www.rp.edu.sg"
-      // }));
+      agent.add("Hi! I'm Buffy, the Neo Garden Bot!!");
   }
 
   function fallback(agent) {
@@ -58,9 +24,6 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     agent.add(`I'm sorry, can you try again?`);
   }
 
-  // // Uncomment and edit to make your own intent handler
-  // // uncomment `intentMap.set('your intent name here', yourFunctionHandler);`
-  // // below to get this function to be run when a Dialogflow intent is matched
   function occasion(agent) {
       var occassionType = agent.parameters.occassionType;
 
@@ -84,6 +47,161 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
           }
       };
 
+      let payLoad = {
+          "message": "Carousel",
+          "platform": "kommunicate",
+          "metadata": {
+              "contentType": "300",
+              "templateId": "10",
+              "payload": [
+                  {
+                      "title": "OYO Rooms 1",
+                      "subtitle": "Kundanahalli road turn.",
+                      "header": {
+                          "overlayText": "$400",
+                          "imgSrc": "http://www.tollesonhotels.com/wp-content/uploads/2017/03/hotel-room.jpg"
+                      },
+                      "description": "Bharathi Road \n Near Head Post Office",
+                      "titleExt": "4.2/5",
+                      "buttons": [
+                          {
+                              "name": "Link Button",
+                              "action": {
+                                  "type": "link",
+                                  "payload": {
+                                      "url": "https://www.facebook.com"
+                                  }
+                              }
+                          },
+                          {
+                              "name": "Suggested Reply",
+                              "action": {
+                                  "type": "quickReply",
+                                  "payload": {
+                                      "message": "text will be sent as message",
+                                      "replyMetadata": {
+                                          "key1": "value1"
+                                      }
+                                  }
+                              }
+                          },
+                          {
+                              "name": "Submit button",
+                              "action": {
+                                  "type": "submit",
+                                  "payload": {
+                                      "text": "acknowledgement text",
+                                      "formData": {
+                                          "amount": "$55",
+                                          "description": "movie ticket"
+                                      },
+                                      "formAction": "https://example.com/book",
+                                      "requestType": "json"
+                                  }
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "title": "OYO Rooms 2",
+                      "subtitle": "Kundanahalli ",
+                      "header": {
+                          "overlayText": "$360",
+                          "imgSrc": "http://www.tollesonhotels.com/wp-content/uploads/2017/03/hotel-room.jpg"
+                      },
+                      "description": "Bharathi Road | Near Head Post Office, Cuddalore 607001",
+                      "titleExt": "4.2/5",
+                      "buttons": [
+                          {
+                              "name": "Link Button",
+                              "action": {
+                                  "type": "link",
+                                  "payload": {
+                                      "url": "https://www.facebook.com"
+                                  }
+                              }
+                          },
+                          {
+                              "name": "Submit button",
+                              "action": {
+                                  "type": "submit",
+                                  "payload": {
+                                      "text": "acknowledgement text",
+                                      "formData": {
+                                          "amount": "$22",
+                                          "description": "movie ticket"
+                                      },
+                                      "formAction": "https://example.com/book",
+                                      "requestType": "json"
+                                  }
+                              }
+                          },
+                          {
+                              "name": "Suggested Reply",
+                              "action": {
+                                  "type": "quickReply",
+                                  "payload": {
+                                      "message": "text will be sent as message",
+                                      "replyMetadata": {
+                                          "key1": "value1"
+                                      }
+                                  }
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "title": "OYO Rooms 3",
+                      "subtitle": "Kundanahalli ",
+                      "header": {
+                          "overlayText": "$750",
+                          "imgSrc": "http://www.tollesonhotels.com/wp-content/uploads/2017/03/hotel-room.jpg"
+                      },
+                      "description": "Bharathi Road | Near Head Post Office, Cuddalore 607001",
+                      "titleExt": "4.2/5",
+                      "buttons": [
+                          {
+                              "name": "Link Button",
+                              "action": {
+                                  "type": "link",
+                                  "payload": {
+                                      "url": "https://www.facebook.com"
+                                  }
+                              }
+                          },
+                          {
+                              "name": "Submit button",
+                              "action": {
+                                  "type": "submit",
+                                  "payload": {
+                                      "text": "acknowledgement text",
+                                      "formData": {
+                                          "amount": "$45",
+                                          "description": "movie ticket"
+                                      },
+                                      "formAction": "https://example.com/book",
+                                      "requestType": "json"
+                                  }
+                              }
+                          },
+                          {
+                              "name": "Suggested Reply",
+                              "action": {
+                                  "type": "quickReply",
+                                  "payload": {
+                                      "message": "text will be sent as message",
+                                      "replyMetadata": {
+                                          "key1": "value1"
+                                      }
+                                  }
+                              }
+                          }
+                      ]
+                  }
+              ]
+          }
+      };
+
       return new Promise(function(resolve, reject) {
           // Do async job
           var req = http.request(options, function (response) {
@@ -101,31 +219,23 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
           });
           req.write(JSON.stringify(bodyData));
           req.end();
-
-          // http.get(options, function(err, resp, body) {
-          //     if (err) {
-          //         reject(err);
-          //     } else {
-          //         resolve(JSON.parse(body));
-          //     }
-          // })
       }).then(function (result) {
           let count = result.length;
           agent.add(count + " objects found in menu array.");
           agent.add(`Here's a recommendation for your ${occassionType} `);
-          agent.add(new Card({
-                title: result[1].MenuNameE_Online,
-                imageUrl: "https://www.gstatic.com/webp/gallery/4.jpg",
-                  text: "This is some example text...",
-                  buttonText: "Button",
-                  buttonUrl: "https://www.rp.edu.sg"
-              })
-          );
-          agent.add(new Suggestion(`Quick Reply`));
-          agent.add(new Suggestion(`Suggestion`));
-          // agent.setContext({ name: 'weather', lifespan: 2, parameters: { city: 'Rome' }});
+          // agent.add(new Card({
+          //       title: result[1].MenuNameE_Online,
+          //       imageUrl: "https://www.gstatic.com/webp/gallery/4.jpg",
+          //         text: "This is some example text...",
+          //         buttonText: "Button",
+          //         buttonUrl: "https://www.rp.edu.sg"
+          //     })
+          // );
+          // agent.add(new Suggestion(`Quick Reply`));
+          // agent.add(new Suggestion(`Suggestion`));
+          agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
+          agent.setContext({ name: 'weather', lifespan: 2, parameters: { city: 'Rome' }});
       });
-
 
   }
 
