@@ -49,8 +49,8 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         }).then(function (result) {
             let count = result.length;
             menuTypes = result;
-            agent.add(count + " menu types found.");
-            agent.add(menuTypes[0].MenuTypeID + " is " + menuTypes[0].MenuTypeName)
+            // agent.add(count + " menu types found.");
+            // agent.add(menuTypes[0].MenuTypeID + " is " + menuTypes[0].MenuTypeName)
 
             agent.add("Hi! I'm Buffy, the Neo Garden Bot!!");
             agent.add("What can I do for you today?");
