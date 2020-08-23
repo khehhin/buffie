@@ -12,8 +12,9 @@ var menuTypes = [];
 var occassionType = "";
 var numPax = 0;
 var diet = "";
-var budgetAmt = "";
-var eventDate = "2020-09-09";
+var amount = "";
+var eventDate = "";
+var eventTime = "";
 
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
@@ -75,7 +76,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         agent.add(new Suggestion(`Praying`));
         agent.add(new Suggestion(`Wedding`));
         agent.add(new Suggestion(`Baby Full Month`));
-        agent.add(new Suggestion(`100th Celebration`));
+        agent.add(new Suggestion(`100th Day Celebration`));
         agent.add(new Suggestion(`Birthday`));
         agent.add(new Suggestion(`Charity`));
         agent.add(new Suggestion(`House Warming`));
@@ -125,14 +126,56 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     }
 
     function whenDate(agent) {
-        budgetAmt = agent.parameters.budgetAmount;
+        amount = agent.parameters.amountBudgeted;
 
-        agent.add("Alright, I'll work out something within $" + budgetAmt);
-        agent.add("When do you plan to have this event?");
+        var payload = {
+            "message": "When do you plan to have your event?",
+            "platform": "kommunicate",
+            "metadata": {
+                "contentType": "300",
+                "templateId": "12",
+                "payload": [
+                    {
+                        "type": "date",
+                        "data": {
+                            "label": "Event Date"
+                        }
+                    },
+                    {
+                        "type": "time",
+                        "data": {
+                            "label": "Event Time"
+                        }
+                    },
+                    {
+                        "type": "submit",
+                        "data": {
+                            "action": {
+                                "message": "Submitted event date time",
+                                "requestType": "postBackToBotPlatform",
+                                "formAction": ""
+                            },
+                            "type": "submit",
+                            "name": "Submit"
+                        }
+                    }
+                ]
+            }
+        };
+
+        agent.add("Alright, I'll work out something within $" + amount);
+        agent.add(new Payload("PLATFORM_UNSPECIFIED", payload));
+    }
+
+    function cuisine(agent){
+        let formData = request.body.originalDetectIntentRequest.payload.formData;
+        eventDate = formData["Event Date"];
+        eventTime = formData["Event Time"];
+        agent.add("Your event will be on " + eventDate + " at " + eventTime);
     }
 
 
-    function cuisine(agent) {
+    function example(agent) {
         // var occassionType = agent.parameters.occassionType;
         // var numPax = agent.parameters.pax;
 
@@ -375,8 +418,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     intentMap.set('Number of Pax', dietary);
     intentMap.set('Dietary Restrictions', budget);
     intentMap.set('Budget', whenDate);
-
-    // intentMap.set('Cuisine', cuisine);
+    intentMap.set('EventDateTime', cuisine);
 
     // intentMap.set('your intent name here', googleAssistantHandler);
     agent.handleRequest(intentMap);
