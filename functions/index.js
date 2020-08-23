@@ -8,14 +8,18 @@ const {Card, Suggestion} = require('dialogflow-fulfillment');
 const {Payload} = require('dialogflow-fulfillment');
 const http = require('http');
 process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
+var menuTypes = [];
+var occassionType = "";
+var numPax = 0;
+var diet = "";
+var budgetAmt = "";
+var eventDate = "2020-09-09";
+
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
     const agent = new WebhookClient({ request, response });
     console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
     console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
-    var menuTypes = [];
-    var occassionType = "";
-    var numPax = 0;
 
     function welcome(agent) {
         // Get List of Cuisines (MenuTypes)
@@ -87,70 +91,44 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         agent.add(new Suggestion(`CNY`));
         agent.add(new Suggestion(`Xmas`));
         agent.add(new Suggestion(`Others`));
+    }
 
+
+    function pax(agent) {
+        occassionType = agent.parameters.occassionType;
+        agent.add(`Ok, how many pax will there be for your ${occassionType}`);
 
     }
 
-    function dietary(agent) {
-        occassionType = agent.parameters.occassionType;
-        // numPax = agent.parameters.pax;
 
-        agent.add(`Ok, you are expecting ${numPax} pax for your ${occassionType}`);
+    function dietary(agent) {
+        numPax = agent.parameters.pax;
+
+        // agent.add(menuTypes.length + " menu types found.");
+        // agent.add(menuTypes[0].MenuTypeID + " is " + menuTypes[0].MenuTypeName);
+
+        agent.add("Ok, you are expecting " + numPax + " pax for your "+ occassionType);
         agent.add(`Any dietary preference?`);
         agent.add(new Suggestion(`Vegetarian only`));
         agent.add(new Suggestion(`Halal`));
         agent.add(new Suggestion(`Vegetarian and Halal`));
         agent.add(new Suggestion(`No restriction`));
+    }
+
+    function budget(agent) {
+        diet = agent.parameters.dietaryType;
+
+        agent.add("Ok, you have specified " + diet + " dietary preference for your " + occassionType + " for " + numPax + " pax");
+        agent.add(`Next, can you tell me how much you are willing to spend for this occasion?`);
+        agent.add(`So that I can work out something within your budget?`);
 
     }
 
-    function pax(agent) {
-        var occassionType = agent.parameters.occassionType;
+    function whenDate(agent) {
+        budgetAmt = agent.parameters.budgetAmount;
 
-        return new Promise(function(resolve, reject) {
-            // Do async job
-            var req = http.request(options, function (response) {
-                var str = '';
-                response.on('error', function (err) {
-                    reject(err);
-                });
-                response.on('data', function (chunk) {
-                    str += chunk;
-                });
-                response.on('end', function () {
-                    console.log("Ended, result is : " + str);
-                    resolve(JSON.parse(str));
-                });
-            });
-            req.write(JSON.stringify(bodyData));
-            req.end();
-        }).then(function (result) {
-            let count = result.length;
-            agent.add(`Ok, you are expecting ${numPax} pax for your ${occassionType}`);
-            agent.add(`Any dietary preference?`);
-            agent.add(new Suggestion(`Vegetarian only`));
-            agent.add(new Suggestion(`Halal`));
-            agent.add(new Suggestion(`Vegetarian and Halal`));
-            agent.add(new Suggestion(`No restriction`));
-
-            // agent.add(count + " objects found in menu array.");
-            // agent.add(`Here's a recommendation for your ${occassionType} `);
-
-            // agent.add(new Card({
-            //       title: result[1].MenuNameE_Online,
-            //       imageUrl: "https://www.gstatic.com/webp/gallery/4.jpg",
-            //         text: "This is some example text...",
-            //         buttonText: "Button",
-            //         buttonUrl: "https://www.rp.edu.sg"
-            //     })
-            // );
-            // agent.add(new Suggestion(`Quick Reply`));
-            // agent.add(new Suggestion(`Suggestion`));
-
-            // agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
-            // agent.setContext({ name: 'weather', lifespan: 2, parameters: { city: 'Rome' }});
-        });
-
+        agent.add("Alright, I'll work out something within $" + budgetAmt);
+        agent.add("When do you plan to have this event?");
     }
 
 
@@ -392,10 +370,13 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     let intentMap = new Map();
     intentMap.set('Default Welcome Intent', welcome);
     intentMap.set('Default Fallback Intent', fallback);
-    intentMap.set('Recommendations', occasion);
-    // intentMap.set('Occasion', pax); // No need for fulfilment
+    intentMap.set('Recommendation', occasion);
+    intentMap.set('Occasion', pax);
     intentMap.set('Number of Pax', dietary);
-    intentMap.set('Cuisine', cuisine);
+    intentMap.set('Dietary Restrictions', budget);
+    intentMap.set('Budget', whenDate);
+
+    // intentMap.set('Cuisine', cuisine);
 
     // intentMap.set('your intent name here', googleAssistantHandler);
     agent.handleRequest(intentMap);
