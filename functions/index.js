@@ -93,7 +93,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
     function dietary(agent) {
         occassionType = agent.parameters.occassionType;
-        numPax = agent.parameters.pax;
+        // numPax = agent.parameters.pax;
 
         agent.add(`Ok, you are expecting ${numPax} pax for your ${occassionType}`);
         agent.add(`Any dietary preference?`);
