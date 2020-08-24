@@ -213,9 +213,9 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             }
         };
 
-        var subPayLoad = [];
+        var carousel = [];
         menuTypes.forEach( menuType => {
-            var card1 = {
+            var card = {
                 "title": "",
                 "subtitle": menuType.MenuTypeName,
                 "header": {
@@ -249,30 +249,9 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                 ]
             };
 
-            // var card = {
-            //     "title": menuType.MenuTypeName,
-            //     "subtitle": "",
-            //     "header": {
-            //         "overlayText": "Fr " + menuType.Menu[0].Price + " per " + menuType.Menu[0].SetOrPax,
-            //     },
-            //     "description": "",
-            //     "buttons": [
-            //         {
-            //             "name": "Select",
-            //             "action": {
-            //                 "type": "quickReply",
-            //                 "payload": {
-            //                     "title": "Yes",
-            //                     "message": "text will be sent as message",
-            //                 }
-            //             }
-            //         }
-            //     ]
-            // };
-
-            subPayLoad.push(card1);
+            carousel.push(card);
         });
-        payLoad.metadata.payload = subPayLoad;
+        payLoad.metadata.payload = carousel;
         agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
     }
 
