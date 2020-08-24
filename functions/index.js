@@ -10,7 +10,7 @@ const http = require('http');
 process.env.DEBUG = 'dialogflow:*'; // enables lib debugging statements
 var menuTypes = [];
 var occassionType = "";
-var numPax = 0;
+var numPax = "";
 var diet = "";
 var amount = "";
 var eventDate = "";
@@ -177,46 +177,19 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         // Get Menus here
         // "message": "Your event will be on " + eventDate + " at " + eventTime + "\nWhat type of cuisine would you fancy?",
 
-
         var payLoad = {
             "message": "Your event will be on " + eventDate + " at " + eventTime + "\nWhat type of cuisine would you fancy?",
             "platform": "kommunicate",
             "metadata": {
                 "contentType": "300",
                 "templateId": "10",
-                "payload": [
-                    {
-                        "title": "OYO Rooms 1",
-                        "subtitle": "Kundanahalli road turn.",
-                        "header": {
-                            "overlayText": "$400",
-                            "imgSrc": "http://www.tollesonhotels.com/wp-content/uploads/2017/03/hotel-room.jpg"
-                        },
-                        "description": "Bharathi Road \n Near Head Post Office",
-                        "titleExt": "4.2/5",
-                        "buttons": [
-                            {
-                                "name": "Suggested Reply",
-                                "action": {
-                                    "type": "quickReply",
-                                    "payload": {
-                                        "message": "text will be sent as message",
-                                        "replyMetadata": {
-                                            "key1": "value1"
-                                        }
-                                    }
-                                }
-                            }
-                        ]
-                    }
-
-                ]
+                "payload": []
             }
         };
 
         var carousel = [];
         menuTypes.forEach( menuType => {
-            var card = {
+            let card = {
                 "title": "",
                 "subtitle": menuType.MenuTypeName,
                 "header": {
@@ -259,7 +232,100 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     function getMenus(agent){
         menuType = agent.parameters.menuType;
         var cuisineType = menuTypes.find( element => element.MenuTypeName === menuType);
-        agent.add("MenuTypeID is " + cuisineType.MenuTypeID);
+        // agent.add("MenuTypeID is " + cuisineType.MenuTypeID);
+        let bodyData = {
+            MenuTypeID: cuisineType.MenuTypeID,
+            FunctionType: occassionType,
+            Dietary: diet,
+            EventDate: eventDate,
+            NoOfPax: numPax,
+            Budget: amount
+        };
+
+        console.log(JSON.stringify(bodyData));
+
+        let options = {
+            host: "40.119.212.144",
+            path: "/beta_delihub/api/Menu/GetMenusListByFilters_V2",
+            method: 'POST',
+            // authentication headers
+            headers: {
+                'Authorization': 'Basic ' + new Buffer.from('DH_Xruptive' + ':' + 'DH_XPT@2020').toString('base64'),
+                'Content-Type': 'application/json'
+            }
+        };
+
+        var payLoad = {
+            "message": "I think you might like these recommendations",
+            "platform": "kommunicate",
+            "metadata": {
+                "contentType": "300",
+                "templateId": "10",
+                "payload": []
+            }
+        };
+
+        return new Promise(function(resolve, reject) {
+            // Do async job
+            var req = http.request(options, function (response) {
+                var str = '';
+                response.on('error', function (err) {
+                    reject(err);
+                });
+                response.on('data', function (chunk) {
+                    str += chunk;
+                });
+                response.on('end', function () {
+                    console.log("Ended, result is : " + str);
+                    resolve(JSON.parse(str));
+                });
+            });
+            req.write(JSON.stringify(bodyData));
+            req.end();
+        }).then(function (result) {
+
+            var carousel = [];
+            for(var i=0; i < result.length; i++) {
+                let menu = result[i];
+                let card = {
+                    "title": "",
+                    "subtitle": menu.MenuNameE,
+                    "header": {
+                        "overlayText": "$" + menu.PriceWD,
+                        "imgSrc": ""
+                    },
+                    "description": "Price(w GST) is $" + menu.PriceWD_WithGst + " per " + menu.MenuSetOrPax ,
+                    "titleExt": "Min " + menu.MenuSetOrPax + " " + menu.MinPax ,
+                    "buttons": [
+                        {
+                            "name": "Find out more",
+                            "action": {
+                                "type": "link",
+                                "payload": {
+                                    "url": menu.MenuPdfUrl
+                                }
+                            }
+                        },
+                        {
+                            "name": "Place an order",
+                            "action": {
+                                "type": "quickReply",
+                                "payload": {
+                                    "message": menu.MenuNameE,
+                                    "replyMetadata": {
+                                        "key1": "value1"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                };
+                carousel.push(card);
+            };
+
+            payLoad.metadata.payload = carousel;
+            agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
+        });
     }
 
 // ***** Boiler plate for Kommunicate's  Carousel ************
@@ -464,20 +530,20 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             // agent.add(`Ok, you are expecting ${numPax} pax for your ${occassionType}`);
 
             agent.add(count + " objects found in menu array.");
-            // agent.add(`Here's a recommendation for your ${occassionType} `);
+            agent.add(`Here's a recommendation for your ${occassionType} `);
 
-            // agent.add(new Card({
-            //         title: result[1].MenuNameE_Online,
-            //         imageUrl: "https://www.gstatic.com/webp/gallery/4.jpg",
-            //         text: "This is some example text...",
-            //         buttonText: "Button",
-            //         buttonUrl: "https://www.rp.edu.sg"
-            //     })
-            // );
-            // agent.add(new Suggestion(`Quick Reply`));
-            // agent.add(new Suggestion(`Suggestion`));
+            agent.add(new Card({
+                    title: result[1].MenuNameE_Online,
+                    imageUrl: "https://www.gstatic.com/webp/gallery/4.jpg",
+                    text: "This is some example text...",
+                    buttonText: "Button",
+                    buttonUrl: "https://www.rp.edu.sg"
+                })
+            );
+            agent.add(new Suggestion(`Quick Reply`));
+            agent.add(new Suggestion(`Suggestion`));
 
-            agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
+            // agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
             // agent.setContext({ name: 'weather', lifespan: 2, parameters: { city: 'Rome' }});
         });
 
