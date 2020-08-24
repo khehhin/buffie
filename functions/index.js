@@ -10,9 +10,9 @@ const http = require('http');
 process.env.DEBUG = 'dialogflow:*'; // enables lib debugging statements
 var menuTypes = [];
 var occassionType = "";
-var numPax = "";
+var numPax = 0;
 var diet = "";
-var amount = "";
+var amount = 0.0;
 var eventDate = "";
 var eventTime = "";
 var menuType = "";
@@ -188,6 +188,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         };
 
         var carousel = [];
+
         menuTypes.forEach( menuType => {
             let card = {
                 "title": "",
@@ -222,11 +223,13 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                     }
                 ]
             };
-
             carousel.push(card);
+
         });
+
         payLoad.metadata.payload = carousel;
         agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
+
     }
 
     function getMenus(agent){
@@ -237,9 +240,9 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             MenuTypeID: cuisineType.MenuTypeID,
             FunctionType: occassionType,
             Dietary: diet,
-            EventDate: eventDate,
-            NoOfPax: numPax,
-            Budget: amount
+            EventDate: eventDate.toString(),
+            NoOfPax: numPax.toString(),
+            Budget: amount.toString()
         };
 
         console.log(JSON.stringify(bodyData));
@@ -286,8 +289,8 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
             var carousel = [];
             for(var i=0; i < result.length; i++) {
-                let menu = result[i];
-                let card = {
+                var menu = result[i];
+                var card = {
                     "title": "",
                     "subtitle": menu.MenuNameE,
                     "header": {
