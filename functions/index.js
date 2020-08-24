@@ -15,6 +15,7 @@ var diet = "";
 var amount = "";
 var eventDate = "";
 var eventTime = "";
+var menuType = "";
 
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
@@ -253,6 +254,12 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         });
         payLoad.metadata.payload = carousel;
         agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
+    }
+
+    function getMenus(agent){
+        menuType = agent.parameters.menuType;
+        var cuisineType = menuTypes.find( element => element.MenuTypeName === menuType);
+        agent.add("MenuTypeID is " + cuisineType.MenuTypeID);
     }
 
 // ***** Boiler plate for Kommunicate's  Carousel ************
@@ -500,6 +507,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     intentMap.set('Dietary Restrictions', budget);
     intentMap.set('Budget', whenDate);
     intentMap.set('EventDateTime', cuisine);
+    intentMap.set('Cuisine', getMenus);
 
     intentMap.set('Test01', example);
 
