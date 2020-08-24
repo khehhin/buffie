@@ -7,7 +7,7 @@ const {WebhookClient} = require('dialogflow-fulfillment');
 const {Card, Suggestion} = require('dialogflow-fulfillment');
 const {Payload} = require('dialogflow-fulfillment');
 const http = require('http');
-process.env.DEBUG = 'dialogflow:debug'; // enables lib debugging statements
+process.env.DEBUG = 'dialogflow:*'; // enables lib debugging statements
 var menuTypes = [];
 var occassionType = "";
 var numPax = 0;
@@ -128,8 +128,9 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     function whenDate(agent) {
         amount = agent.parameters.amountBudgeted;
 
+        // DatePicker and TimePicker
         var payload = {
-            "message": "When do you plan to have your event?",
+            "message": "Alright, I'll work out something within $" + amount + "\nWhen do you plan to have your event?",
             "platform": "kommunicate",
             "metadata": {
                 "contentType": "300",
@@ -163,18 +164,110 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             }
         };
 
-        agent.add("Alright, I'll work out something within $" + amount);
         agent.add(new Payload("PLATFORM_UNSPECIFIED", payload));
+
     }
 
     function cuisine(agent){
         let formData = request.body.originalDetectIntentRequest.payload.formData;
         eventDate = formData["Event Date"];
         eventTime = formData["Event Time"];
-        agent.add("Your event will be on " + eventDate + " at " + eventTime);
+        // agent.add("Your event will be on " + eventDate + " at " + eventTime);
+        // Get Menus here
+        // "message": "Your event will be on " + eventDate + " at " + eventTime + "\nWhat type of cuisine would you fancy?",
+
+
+        var payLoad = {
+            "message": "Your event will be on " + eventDate + " at " + eventTime + "\nWhat type of cuisine would you fancy?",
+            "platform": "kommunicate",
+            "metadata": {
+                "contentType": "300",
+                "templateId": "10",
+                "payload": [
+                    {
+                        "title": "OYO Rooms 1",
+                        "subtitle": "Kundanahalli road turn.",
+                        "header": {
+                            "overlayText": "$400",
+                            "imgSrc": "http://www.tollesonhotels.com/wp-content/uploads/2017/03/hotel-room.jpg"
+                        },
+                        "description": "Bharathi Road \n Near Head Post Office",
+                        "titleExt": "4.2/5",
+                        "buttons": [
+                            {
+                                "name": "Suggested Reply",
+                                "action": {
+                                    "type": "quickReply",
+                                    "payload": {
+                                        "message": "text will be sent as message",
+                                        "replyMetadata": {
+                                            "key1": "value1"
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+
+                ]
+            }
+        };
+
+        var subPayLoad = [];
+        menuTypes.forEach( menuType => {
+            var card1 = {
+                "title": menuType.MenuTypeName,
+                "subtitle": "Kundanahalli road turn.",
+                "header": {
+                    "overlayText": "$400",
+                    "imgSrc": "http://www.tollesonhotels.com/wp-content/uploads/2017/03/hotel-room.jpg"
+                },
+                "description": "Bharathi Road \n Near Head Post Office",
+                "titleExt": "4.2/5",
+                "buttons": [
+                    {
+                        "name": "Suggested Reply",
+                        "action": {
+                            "type": "quickReply",
+                            "payload": {
+                                "message": "text will be sent as message",
+                                "replyMetadata": {
+                                    "key1": "value1"
+                                }
+                            }
+                        }
+                    }
+                ]
+            };
+
+            // var card = {
+            //     "title": menuType.MenuTypeName,
+            //     "subtitle": "",
+            //     "header": {
+            //         "overlayText": "Fr " + menuType.Menu[0].Price + " per " + menuType.Menu[0].SetOrPax,
+            //     },
+            //     "description": "",
+            //     "buttons": [
+            //         {
+            //             "name": "Select",
+            //             "action": {
+            //                 "type": "quickReply",
+            //                 "payload": {
+            //                     "title": "Yes",
+            //                     "message": "text will be sent as message",
+            //                 }
+            //             }
+            //         }
+            //     ]
+            // };
+
+            subPayLoad.push(card1);
+        });
+        payLoad.metadata.payload = subPayLoad;
+        agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
     }
 
-
+// ***** Boiler plate for Kommunicate's  Carousel ************
     function example(agent) {
         // var occassionType = agent.parameters.occassionType;
         // var numPax = agent.parameters.pax;
@@ -378,18 +471,18 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             agent.add(count + " objects found in menu array.");
             // agent.add(`Here's a recommendation for your ${occassionType} `);
 
-            agent.add(new Card({
-                    title: result[1].MenuNameE_Online,
-                    imageUrl: "https://www.gstatic.com/webp/gallery/4.jpg",
-                    text: "This is some example text...",
-                    buttonText: "Button",
-                    buttonUrl: "https://www.rp.edu.sg"
-                })
-            );
-            agent.add(new Suggestion(`Quick Reply`));
-            agent.add(new Suggestion(`Suggestion`));
+            // agent.add(new Card({
+            //         title: result[1].MenuNameE_Online,
+            //         imageUrl: "https://www.gstatic.com/webp/gallery/4.jpg",
+            //         text: "This is some example text...",
+            //         buttonText: "Button",
+            //         buttonUrl: "https://www.rp.edu.sg"
+            //     })
+            // );
+            // agent.add(new Suggestion(`Quick Reply`));
+            // agent.add(new Suggestion(`Suggestion`));
 
-            // agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
+            agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
             // agent.setContext({ name: 'weather', lifespan: 2, parameters: { city: 'Rome' }});
         });
 
@@ -419,6 +512,9 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     intentMap.set('Dietary Restrictions', budget);
     intentMap.set('Budget', whenDate);
     intentMap.set('EventDateTime', cuisine);
+
+    intentMap.set('Test01', example);
+
 
     // intentMap.set('your intent name here', googleAssistantHandler);
     agent.handleRequest(intentMap);
