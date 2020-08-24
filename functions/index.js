@@ -216,21 +216,30 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         var subPayLoad = [];
         menuTypes.forEach( menuType => {
             var card1 = {
-                "title": menuType.MenuTypeName,
-                "subtitle": "Kundanahalli road turn.",
+                "title": "",
+                "subtitle": menuType.MenuTypeName,
                 "header": {
-                    "overlayText": "$400",
-                    "imgSrc": "http://www.tollesonhotels.com/wp-content/uploads/2017/03/hotel-room.jpg"
+                    // "overlayText": "",
+                    "imgSrc": "https://www.neogarden.com.sg/images/menus/regular-buffet.jpg"
                 },
-                "description": "Bharathi Road \n Near Head Post Office",
-                "titleExt": "4.2/5",
+                "description": "Fr $" + menuType.Menu[0].Price.toString() + " per " + menuType.Menu[0].SetOrPax,
+                // "titleExt": "4.2/5",
                 "buttons": [
                     {
-                        "name": "Suggested Reply",
+                        "name": "Find out more",
+                        "action": {
+                            "type": "link",
+                            "payload": {
+                                "url": "https://order.neogarden.com.sg/menu/"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Select this",
                         "action": {
                             "type": "quickReply",
                             "payload": {
-                                "message": "text will be sent as message",
+                                "message": menuType.MenuTypeName,
                                 "replyMetadata": {
                                     "key1": "value1"
                                 }
