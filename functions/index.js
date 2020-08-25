@@ -258,24 +258,6 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             }
         };
 
-        var payLoad = {
-            "message": "Based on your selection: \n" +
-                        "Event: " + occassionType + "\n" +
-                        "Pax: " + numPax + "\n" +
-                        "Budget: " + amount + "\n" +
-                        "Dietary: " + diet + "\n" +
-                        "Menu type: " + cuisineType.MenuTypeName + "\n" +
-                        "Menu Id: " + cuisineType.MenuTypeID + "\n" +
-                        "Date: " + eventDate + "\n" +
-                        "I think you might like these recommendations",
-            "platform": "kommunicate",
-            "metadata": {
-                "contentType": "300",
-                "templateId": "10",
-                "payload": []
-            }
-        };
-
         return new Promise(function(resolve, reject) {
             // Do async job
             var req = http.request(options, function (response) {
@@ -295,47 +277,80 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             req.end();
         }).then(function (result) {
 
-            var carousel = [];
-            for(var i=0; i < result.length; i++) {
-                var menu = result[i];
-                var card = {
-                    "title": "",
-                    "subtitle": menu.MenuNameE,
-                    "header": {
-                        "overlayText": "$" + menu.PriceWD,
-                        "imgSrc": ""
-                    },
-                    "description": "Price(w GST) is $" + menu.PriceWD_WithGst + " per " + menu.MenuSetOrPax ,
-                    "titleExt": "Min " + menu.MenuSetOrPax + " " + menu.MinPax ,
-                    "buttons": [
-                        {
-                            "name": "Find out more",
-                            "action": {
-                                "type": "link",
-                                "payload": {
-                                    "url": menu.MenuPdfUrl
-                                }
-                            }
+            if (result == "No Data Found.") {
+                agent.add("Sorry, based on your selection: \n" +
+                    "Event: " + occassionType + "\n" +
+                    "Pax: " + numPax + "\n" +
+                    "Budget: " + amount + "\n" +
+                    "Dietary: " + diet + "\n" +
+                    "Menu type: " + cuisineType.MenuTypeName + "\n" +
+                    "Menu type Id: " + cuisineType.MenuTypeID + "\n" +
+                    "Date: " + eventDate + "\n\n" +
+                    "I cannot find any suitable menus.");
+                agent.add("Please type 'Hi' to retry.");
+            } else {
+                var payLoad = {
+                    "message": "Based on your selection: \n" +
+                        "Event: " + occassionType + "\n" +
+                        "Pax: " + numPax + "\n" +
+                        "Budget: " + amount + "\n" +
+                        "Dietary: " + diet + "\n" +
+                        "Menu type: " + cuisineType.MenuTypeName + "\n" +
+                        "Menu Id: " + cuisineType.MenuTypeID + "\n" +
+                        "Date: " + eventDate + "\n" +
+                        "I think you might like these recommendations",
+                    "platform": "kommunicate",
+                    "metadata": {
+                        "contentType": "300",
+                        "templateId": "10",
+                        "payload": []
+                    }
+                };
+
+                var carousel = [];
+                for(var i=0; i < result.length; i++) {
+                    var menu = result[i];
+                    var card = {
+                        "title": "",
+                        "subtitle": menu.MenuNameE,
+                        "header": {
+                            "overlayText": "$" + menu.PriceWD,
+                            "imgSrc": ""
                         },
-                        {
-                            "name": "Place an order",
-                            "action": {
-                                "type": "quickReply",
-                                "payload": {
-                                    "message": menu.MenuNameE,
-                                    "replyMetadata": {
-                                        "key1": "value1"
+                        "description": "Price(w GST) is $" + menu.PriceWD_WithGst + " per " + menu.MenuSetOrPax ,
+                        "titleExt": "Min " + menu.MenuSetOrPax + " " + menu.MinPax ,
+                        "buttons": [
+                            {
+                                "name": "Find out more",
+                                "action": {
+                                    "type": "link",
+                                    "payload": {
+                                        "url": menu.MenuPdfUrl
+                                    }
+                                }
+                            },
+                            {
+                                "name": "Place an order",
+                                "action": {
+                                    "type": "quickReply",
+                                    "payload": {
+                                        "message": menu.MenuNameE,
+                                        "replyMetadata": {
+                                            "key1": "value1"
+                                        }
                                     }
                                 }
                             }
-                        }
-                    ]
+                        ]
+                    };
+                    carousel.push(card);
                 };
-                carousel.push(card);
-            };
 
-            payLoad.metadata.payload = carousel;
-            agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
+                payLoad.metadata.payload = carousel;
+                agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
+            }
+
+
         });
     }
 
