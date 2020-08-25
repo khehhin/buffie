@@ -259,7 +259,15 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         };
 
         var payLoad = {
-            "message": "I think you might like these recommendations",
+            "message": "Based on your selection: \n" +
+                        "Event: " + occassionType + "\n" +
+                        "Pax: " + numPax + "\n" +
+                        "Budget: " + amount + "\n" +
+                        "Dietary: " + diet + "\n" +
+                        "Menu type: " + cuisineType.MenuTypeName + "\n" +
+                        "Menu Id: " + cuisineType.MenuTypeID + "\n" +
+                        "Date: " + eventDate + "\n" +
+                        "I think you might like these recommendations",
             "platform": "kommunicate",
             "metadata": {
                 "contentType": "300",
