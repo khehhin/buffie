@@ -568,6 +568,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             );
             agent.add(new Suggestion(`Quick Reply`));
             agent.add(new Suggestion(`Suggestion`));
+            // agent.response.sessionEntityTypes.add();
 
             // agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
             // agent.setContext({ name: 'weather', lifespan: 2, parameters: { city: 'Rome' }});
