@@ -8,6 +8,7 @@ const {Card, Suggestion} = require('dialogflow-fulfillment');
 const {Payload} = require('dialogflow-fulfillment');
 const http = require('http');
 process.env.DEBUG = 'dialogflow:*'; // enables lib debugging statements
+var sessionId = "";
 var menuTypes = [];
 var occassionType = "";
 var numPax = 0;
@@ -16,12 +17,16 @@ var amount = 0.0;
 var eventDate = "";
 var eventTime = "";
 var menuType = "";
+var menus = [];
+var buffetMenu = {};
 
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
     const agent = new WebhookClient({ request, response });
     console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
     console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
+    sessionId = JSON.stringify(request.body.session);
+    // console.log('Dialogflow Request Session: ' + sessionId);
 
     function welcome(agent) {
         // Get List of Cuisines (MenuTypes)
@@ -336,7 +341,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                                     "payload": {
                                         "message": menu.MenuNameE,
                                         "replyMetadata": {
-                                            "key1": "value1"
+                                            "menuId": menu.MenuID
                                         }
                                     }
                                 }
@@ -344,15 +349,143 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                         ]
                     };
                     carousel.push(card);
+                    menus.push(menu);
                 };
 
                 payLoad.metadata.payload = carousel;
                 agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
             }
-
-
         });
     }
+
+
+    function getMenuCategories(agent){
+        var menuName = agent.parameters.buffetMenu;
+        buffetMenu = menus.find( element => element.MenuNameE === menuName);
+        agent.add("MenuID of " + menuName + " is " + buffetMenu.MenuID);
+
+        // let bodyData = {
+        //     MenuTypeID: cuisineType.MenuTypeID,
+        //     FunctionType: occassionType,
+        //     Dietary: diet,
+        //     EventDate: eventDate.toString(),
+        //     NoOfPax: numPax.toString(),
+        //     Budget: amount.toString()
+        // };
+        //
+        // console.log(JSON.stringify(bodyData));
+        //
+        // let options = {
+        //     host: "40.119.212.144",
+        //     path: "/beta_delihub/api/Menu/GetMenusListByFilters_V2",
+        //     method: 'POST',
+        //     // authentication headers
+        //     headers: {
+        //         'Authorization': 'Basic ' + new Buffer.from('DH_Xruptive' + ':' + 'DH_XPT@2020').toString('base64'),
+        //         'Content-Type': 'application/json'
+        //     }
+        // };
+        //
+        // return new Promise(function(resolve, reject) {
+        //     // Do async job
+        //     var req = http.request(options, function (response) {
+        //         var str = '';
+        //         response.on('error', function (err) {
+        //             reject(err);
+        //         });
+        //         response.on('data', function (chunk) {
+        //             str += chunk;
+        //         });
+        //         response.on('end', function () {
+        //             console.log("Ended, result is : " + str);
+        //             resolve(JSON.parse(str));
+        //         });
+        //     });
+        //     req.write(JSON.stringify(bodyData));
+        //     req.end();
+        // }).then(function (result) {
+        //
+        //     if (result == "No Data Found.") {
+        //         agent.add("Sorry, based on your selection: \n" +
+        //             "Event: " + occassionType + "\n" +
+        //             "Pax: " + numPax + "\n" +
+        //             "Budget: " + amount + "\n" +
+        //             "Dietary: " + diet + "\n" +
+        //             "Menu type: " + cuisineType.MenuTypeName + "\n" +
+        //             "Menu type Id: " + cuisineType.MenuTypeID + "\n" +
+        //             "Date: " + eventDate + "\n\n" +
+        //             "I cannot find any suitable menus.");
+        //         agent.add("Please type 'Hi' to retry.");
+        //     } else {
+        //         var payLoad = {
+        //             "message": "Based on your selection: \n" +
+        //                 "Event: " + occassionType + "\n" +
+        //                 "Pax: " + numPax + "\n" +
+        //                 "Budget: " + amount + "\n" +
+        //                 "Dietary: " + diet + "\n" +
+        //                 "Menu type: " + cuisineType.MenuTypeName + "\n" +
+        //                 "Menu Id: " + cuisineType.MenuTypeID + "\n" +
+        //                 "Date: " + eventDate + "\n" +
+        //                 "I think you might like these recommendations",
+        //             "platform": "kommunicate",
+        //             "metadata": {
+        //                 "contentType": "300",
+        //                 "templateId": "10",
+        //                 "payload": []
+        //             }
+        //         };
+        //
+        //         var carousel = [];
+        //         for(var i=0; i < result.length; i++) {
+        //             var menu = result[i];
+        //             var card = {
+        //                 "title": "",
+        //                 "subtitle": menu.MenuNameE,
+        //                 "header": {
+        //                     "overlayText": "$" + menu.PriceWD,
+        //                     "imgSrc": ""
+        //                 },
+        //                 "description": "Price(w GST) is $" + menu.PriceWD_WithGst + " per " + menu.MenuSetOrPax ,
+        //                 "titleExt": "Min " + menu.MenuSetOrPax + " " + menu.MinPax ,
+        //                 "buttons": [
+        //                     {
+        //                         "name": "Find out more",
+        //                         "action": {
+        //                             "type": "link",
+        //                             "payload": {
+        //                                 "url": menu.MenuPdfUrl
+        //                             }
+        //                         }
+        //                     },
+        //                     {
+        //                         "name": "Place an order",
+        //                         "action": {
+        //                             "type": "quickReply",
+        //                             "payload": {
+        //                                 "message": menu.MenuNameE,
+        //                                 "replyMetadata": {
+        //                                     "menuId": menu.MenuID
+        //                                 }
+        //                             }
+        //                         }
+        //                     }
+        //                 ]
+        //             };
+        //             carousel.push(card);
+        //             menus.push(menu);
+        //         };
+        //
+        //         payLoad.metadata.payload = carousel;
+        //         agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
+        //     }
+        // });
+    }
+
+
+
+
+
+
 
 // ***** Boiler plate for Kommunicate's  Carousel ************
     function example(agent) {
@@ -568,7 +701,6 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             );
             agent.add(new Suggestion(`Quick Reply`));
             agent.add(new Suggestion(`Suggestion`));
-            agent.response.sessionEntityTypes.add();
 
             // agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
             // agent.setContext({ name: 'weather', lifespan: 2, parameters: { city: 'Rome' }});
@@ -601,6 +733,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     intentMap.set('Budget', whenDate);
     intentMap.set('EventDateTime', cuisine);
     intentMap.set('Cuisine', getMenus);
+    intentMap.set('BuffetMenu', getMenuCategories);
 
     intentMap.set('Test01', example);
 
