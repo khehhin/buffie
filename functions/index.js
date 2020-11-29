@@ -352,6 +352,28 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                     menus.push(menu);
                 };
 
+                // Set SessionEntityTypes
+                var entities = [
+                    {
+                        "value":"MINI BUFFET - B",
+                        "synonyms":[
+                            "mini buffet B"
+                        ]
+                    },
+                    {
+                        "value":"MINI BUFFET - C",
+                        "synonyms":[
+                            "mini buffet C"
+                        ]
+                    }
+                ]
+
+                var sessionEntityTypes = {
+                    "name" : sessionId + "/entityTypes/menus",
+                    "entities" : entities,
+                    "entityOverrideMode":"ENTITY_OVERRIDE_MODE_OVERRIDE"
+                }
+                // agent.response.body.sessionEntityTypes = sessionEntityTypes;
                 payLoad.metadata.payload = carousel;
                 agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
             }
