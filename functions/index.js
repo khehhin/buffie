@@ -20,6 +20,7 @@ var menuType = "";
 var menus = [];
 var buffetMenu = {};
 var menuCategories = [];
+var dishes = [];
 
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
@@ -387,7 +388,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                     str += chunk;
                 });
                 response.on('end', function () {
-                    console.log("Ended, result is : " + str);
+                    console.log("Ended, GetMenuDetails result is : " + str);
                     resolve(JSON.parse(str));
                 });
             });
@@ -399,6 +400,47 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             } else {
                 menuCategories = result["MenuCategories"];
                 agent.add(JSON.stringify(menuCategories));
+
+                // Get Menu Dishes here
+                let options = {
+                    host: "40.119.212.144",
+                    path: "/beta_delihub/api/Menu/GetMenuDishes?MenuId=" + buffetMenu.MenuID ,
+                    method: 'GET',
+                    // authentication headers
+                    headers: {
+                        'Authorization': 'Basic ' + new Buffer.from('DH_Xruptive' + ':' + 'DH_XPT@2020').toString('base64'),
+                        'Content-Type': 'application/json'
+                    }
+                };
+                return new Promise(function(resolve, reject) {
+                    // Do async job
+                    var req = http.request(options, function (response) {
+                        var str = '';
+                        response.on('error', function (err) {
+                            reject(err);
+                        });
+                        response.on('data', function (chunk) {
+                            str += chunk;
+                        });
+                        response.on('end', function () {
+                            console.log("Ended, GetMenuDishes result is : " + str);
+                            resolve(JSON.parse(str));
+                        });
+                    });
+                    req.end();
+                }).then(function (result) {
+                    if (result["Message"]) {
+                        agent.add(result["Message"]);
+                    } else {
+                        for(var i=0; i < result.length; i++) {
+                            var dish = result[i];
+                            dishes.push(dish);
+                        }
+                        agent.add(JSON.stringify(dishes));
+
+                    }
+                });
+
             }
         });
     }
