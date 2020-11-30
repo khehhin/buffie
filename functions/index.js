@@ -19,6 +19,7 @@ var eventTime = "";
 var menuType = "";
 var menus = [];
 var buffetMenu = {};
+var menuCategories = [];
 
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
@@ -352,28 +353,6 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                     menus.push(menu);
                 };
 
-                // Set SessionEntityTypes
-                var entities = [
-                    {
-                        "value":"MINI BUFFET - B",
-                        "synonyms":[
-                            "mini buffet B"
-                        ]
-                    },
-                    {
-                        "value":"MINI BUFFET - C",
-                        "synonyms":[
-                            "mini buffet C"
-                        ]
-                    }
-                ]
-
-                var sessionEntityTypes = {
-                    "name" : sessionId + "/entityTypes/menus",
-                    "entities" : entities,
-                    "entityOverrideMode":"ENTITY_OVERRIDE_MODE_OVERRIDE"
-                }
-                // agent.response.body.sessionEntityTypes = sessionEntityTypes;
                 payLoad.metadata.payload = carousel;
                 agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
             }
@@ -382,130 +361,47 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
 
     function getMenuCategories(agent){
-        var menuName = agent.parameters.buffetMenu;
+        var menuName = agent.parameters.menu;
         buffetMenu = menus.find( element => element.MenuNameE === menuName);
         agent.add("MenuID of " + menuName + " is " + buffetMenu.MenuID);
 
-        // let bodyData = {
-        //     MenuTypeID: cuisineType.MenuTypeID,
-        //     FunctionType: occassionType,
-        //     Dietary: diet,
-        //     EventDate: eventDate.toString(),
-        //     NoOfPax: numPax.toString(),
-        //     Budget: amount.toString()
-        // };
-        //
-        // console.log(JSON.stringify(bodyData));
-        //
-        // let options = {
-        //     host: "40.119.212.144",
-        //     path: "/beta_delihub/api/Menu/GetMenusListByFilters_V2",
-        //     method: 'POST',
-        //     // authentication headers
-        //     headers: {
-        //         'Authorization': 'Basic ' + new Buffer.from('DH_Xruptive' + ':' + 'DH_XPT@2020').toString('base64'),
-        //         'Content-Type': 'application/json'
-        //     }
-        // };
-        //
-        // return new Promise(function(resolve, reject) {
-        //     // Do async job
-        //     var req = http.request(options, function (response) {
-        //         var str = '';
-        //         response.on('error', function (err) {
-        //             reject(err);
-        //         });
-        //         response.on('data', function (chunk) {
-        //             str += chunk;
-        //         });
-        //         response.on('end', function () {
-        //             console.log("Ended, result is : " + str);
-        //             resolve(JSON.parse(str));
-        //         });
-        //     });
-        //     req.write(JSON.stringify(bodyData));
-        //     req.end();
-        // }).then(function (result) {
-        //
-        //     if (result == "No Data Found.") {
-        //         agent.add("Sorry, based on your selection: \n" +
-        //             "Event: " + occassionType + "\n" +
-        //             "Pax: " + numPax + "\n" +
-        //             "Budget: " + amount + "\n" +
-        //             "Dietary: " + diet + "\n" +
-        //             "Menu type: " + cuisineType.MenuTypeName + "\n" +
-        //             "Menu type Id: " + cuisineType.MenuTypeID + "\n" +
-        //             "Date: " + eventDate + "\n\n" +
-        //             "I cannot find any suitable menus.");
-        //         agent.add("Please type 'Hi' to retry.");
-        //     } else {
-        //         var payLoad = {
-        //             "message": "Based on your selection: \n" +
-        //                 "Event: " + occassionType + "\n" +
-        //                 "Pax: " + numPax + "\n" +
-        //                 "Budget: " + amount + "\n" +
-        //                 "Dietary: " + diet + "\n" +
-        //                 "Menu type: " + cuisineType.MenuTypeName + "\n" +
-        //                 "Menu Id: " + cuisineType.MenuTypeID + "\n" +
-        //                 "Date: " + eventDate + "\n" +
-        //                 "I think you might like these recommendations",
-        //             "platform": "kommunicate",
-        //             "metadata": {
-        //                 "contentType": "300",
-        //                 "templateId": "10",
-        //                 "payload": []
-        //             }
-        //         };
-        //
-        //         var carousel = [];
-        //         for(var i=0; i < result.length; i++) {
-        //             var menu = result[i];
-        //             var card = {
-        //                 "title": "",
-        //                 "subtitle": menu.MenuNameE,
-        //                 "header": {
-        //                     "overlayText": "$" + menu.PriceWD,
-        //                     "imgSrc": ""
-        //                 },
-        //                 "description": "Price(w GST) is $" + menu.PriceWD_WithGst + " per " + menu.MenuSetOrPax ,
-        //                 "titleExt": "Min " + menu.MenuSetOrPax + " " + menu.MinPax ,
-        //                 "buttons": [
-        //                     {
-        //                         "name": "Find out more",
-        //                         "action": {
-        //                             "type": "link",
-        //                             "payload": {
-        //                                 "url": menu.MenuPdfUrl
-        //                             }
-        //                         }
-        //                     },
-        //                     {
-        //                         "name": "Place an order",
-        //                         "action": {
-        //                             "type": "quickReply",
-        //                             "payload": {
-        //                                 "message": menu.MenuNameE,
-        //                                 "replyMetadata": {
-        //                                     "menuId": menu.MenuID
-        //                                 }
-        //                             }
-        //                         }
-        //                     }
-        //                 ]
-        //             };
-        //             carousel.push(card);
-        //             menus.push(menu);
-        //         };
-        //
-        //         payLoad.metadata.payload = carousel;
-        //         agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
-        //     }
-        // });
+        let options = {
+            host: "40.119.212.144",
+            path: "/beta_delihub/api/Menu/GetMenuDetails?MenuId=" + buffetMenu.MenuID ,
+            method: 'GET',
+            // authentication headers
+            headers: {
+                'Authorization': 'Basic ' + new Buffer.from('DH_Xruptive' + ':' + 'DH_XPT@2020').toString('base64'),
+                'Content-Type': 'application/json'
+            }
+        };
+
+        return new Promise(function(resolve, reject) {
+            // Do async job
+            var req = http.request(options, function (response) {
+                var str = '';
+                response.on('error', function (err) {
+                    reject(err);
+                });
+                response.on('data', function (chunk) {
+                    str += chunk;
+                });
+                response.on('end', function () {
+                    console.log("Ended, result is : " + str);
+                    resolve(JSON.parse(str));
+                });
+            });
+            req.end();
+        }).then(function (result) {
+
+            if (result["Message"]) {
+                agent.add(result["Message"]);
+            } else {
+                menuCategories = result["MenuCategories"];
+                agent.add(JSON.stringify(menuCategories));
+            }
+        });
     }
-
-
-
-
 
 
 
