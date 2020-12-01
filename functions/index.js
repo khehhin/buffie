@@ -399,7 +399,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                 agent.add(result["Message"]);
             } else {
                 menuCategories = result["MenuCategories"];
-                agent.add(JSON.stringify(menuCategories));
+                // agent.add(JSON.stringify(menuCategories));
 
                 // Get Menu Dishes here
                 let options = {
@@ -436,7 +436,18 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                             var dish = result[i];
                             dishes.push(dish);
                         }
-                        agent.add(JSON.stringify(dishes));
+                        // agent.add(JSON.stringify(dishes));
+
+                        menuCategories.forEach( function(category, index){
+                            var categoryDishes = dishes.filter(function(dish){
+                                return dish.MenuCategoryID === category.MenuCategoryID;
+                            });
+                            var dishesStr = "";
+                            categoryDishes.forEach(function(dish, index){
+                                dishesStr = dishesStr + "\n" + dish["DishNameE"];
+                            });
+                            agent.add( category["CategoryName"] + " dishes are:\n" + dishesStr);
+                        });
 
                     }
                 });
