@@ -33,6 +33,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
     console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
     console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
+
     sessionStr = JSON.stringify(request.body.session);
     console.log('Dialogflow Request Session: ' + sessionStr);
     var words = sessionStr.split("/");
@@ -365,23 +366,26 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                     carousel.push(card);
                     menus.push(menu);
                 };
-                var entities = [
-                    {
-                        "value":"PERANAKAN DELIGHTS MINI BUFFET B",
-                        "synonyms":[
-                            "PERANAKAN DELIGHTS MINI BUFFET B"
-                        ]
-                    },
-                    {
-                        "value":"PERANAKAN DELIGHTS MINI BUFFET A",
-                        "synonyms":[
-                            "PERANAKAN DELIGHTS MINI BUFFET B"
-                        ]
+                var entities = [];
+
+                menus.forEach( function(menu){
+                    var entity = {
+                        "value": menu["MenuNameE"],
+                        "synonyms": [menu["MenuNameE"]]
                     }
-                ];
+                    entities.push(entity);
+                });
+
+                var sessionEntityTypes = [
+                        {
+                            "name": sessionStr + "/entityTypes/menus",
+                            "entities": entities,
+                            "entityOverrideMode":"ENTITY_OVERRIDE_MODE_OVERRIDE"
+                        }
+                    ];
                 payLoad.metadata.payload = carousel;
-                agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
-                // createSessionEntityType(projectId, sessionId, entities, "menus","ENTITY_OVERRIDE_MODE_OVERRIDE");
+                agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad),{"sessionEntityTypes": sessionEntityTypes});
+                console.log("sessionEntityTypes: " + JSON.stringify(sessionEntityTypes));
 
             }
         });
@@ -527,6 +531,11 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     }
 
     function getUserDishChoices(agent){
+        agent.add( "For " + buffetMenu["MenuNameE"] + ", you can choose " + buffetMenu["NoOfChoice"] + " dishes.\nClick on each category to select 1 dish per category.");
+        menuCategories.forEach( function(category, index){
+            // agent.add( category["CategoryName"] + " dishes are:\n" + dishesStr);
+            agent.add(new Suggestion(category["CategoryName"]));
+        });
 
     }
 
