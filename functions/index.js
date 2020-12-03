@@ -7,7 +7,10 @@ const {WebhookClient} = require('dialogflow-fulfillment');
 const {Card, Suggestion} = require('dialogflow-fulfillment');
 const {Payload} = require('dialogflow-fulfillment');
 const http = require('http');
+
 process.env.DEBUG = 'dialogflow:*'; // enables lib debugging statements
+var sessionStr = "";
+var projectId = "";
 var sessionId = "";
 var menuTypes = [];
 var occassionType = "";
@@ -21,14 +24,23 @@ var menus = [];
 var buffetMenu = {};
 var menuCategories = [];
 var dishes = [];
+var menuCategory = {};
+var categoriesOfDishes = {};
 
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
     const agent = new WebhookClient({ request, response });
+
     console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
     console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
-    sessionId = JSON.stringify(request.body.session);
-    // console.log('Dialogflow Request Session: ' + sessionId);
+    sessionStr = JSON.stringify(request.body.session);
+    console.log('Dialogflow Request Session: ' + sessionStr);
+    var words = sessionStr.split("/");
+    sessionId = words[4];
+    projectId = words[1];
+    console.log('Dialogflow sessionId: ' + sessionId);
+    console.log('Dialogflow projectId: ' + projectId);
+
 
     function welcome(agent) {
         // Get List of Cuisines (MenuTypes)
@@ -337,7 +349,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                                 }
                             },
                             {
-                                "name": "Place an order",
+                                "name": "View dishes",
                                 "action": {
                                     "type": "quickReply",
                                     "payload": {
@@ -353,9 +365,24 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                     carousel.push(card);
                     menus.push(menu);
                 };
-
+                var entities = [
+                    {
+                        "value":"PERANAKAN DELIGHTS MINI BUFFET B",
+                        "synonyms":[
+                            "PERANAKAN DELIGHTS MINI BUFFET B"
+                        ]
+                    },
+                    {
+                        "value":"PERANAKAN DELIGHTS MINI BUFFET A",
+                        "synonyms":[
+                            "PERANAKAN DELIGHTS MINI BUFFET B"
+                        ]
+                    }
+                ];
+                // createSessionEntityType(projectId, sessionId, entities, "menus", "ENTITY_OVERRIDE_MODE_OVERRIDE");
                 payLoad.metadata.payload = carousel;
                 agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
+
             }
         });
     }
@@ -438,16 +465,13 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                         }
                         // agent.add(JSON.stringify(dishes));
 
+                        agent.add(buffetMenu["MenuNameE"] + " has the following categories of dish choices.\nClick on one to see more. ");
                         menuCategories.forEach( function(category, index){
-                            var categoryDishes = dishes.filter(function(dish){
-                                return dish.MenuCategoryID === category.MenuCategoryID;
-                            });
-                            var dishesStr = "";
-                            categoryDishes.forEach(function(dish, index){
-                                dishesStr = dishesStr + "\n" + dish["DishNameE"];
-                            });
-                            agent.add( category["CategoryName"] + " dishes are:\n" + dishesStr);
+                            // agent.add( category["CategoryName"] + " dishes are:\n" + dishesStr);
+                            agent.add(new Suggestion(category["CategoryName"]));
                         });
+
+                        // agent.add(new Payload("PLATFORM_UNSPECIFIED", templateList));
 
                     }
                 });
@@ -455,6 +479,53 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             }
         });
     }
+
+    function getDishesByCategory(agent) {
+        var menuCategoryName = agent.parameters.dishesCategory;
+        menuCategory = menuCategories.find( element => element["CategoryName"] === menuCategoryName);
+        console.log("Menu catgory is " + menuCategoryName);
+        console.log(JSON.stringify(menuCategory));
+
+        var elements = [];
+        var categoryDishes = dishes.filter(function(dish){
+            return dish.MenuCategoryID === menuCategory.MenuCategoryID;
+        });
+        categoryDishes.forEach(function(dish, index){
+            // Create elements
+            var element = {
+                "imgSrc": dish["DishImageUrl"],
+                "title": dish["DishNameE"],
+                "action": {
+                    "url": dish["DishImageUrl"],
+                    "type": "link"
+                }
+            }
+            elements.push(element);
+        });
+
+        var templateList = {
+            "message": "These are the " + menuCategoryName + " category dishes for " + buffetMenu["MenuNameE"] + "\nClick on one to see more.",
+            "platform": "kommunicate",
+            "metadata": {
+                "contentType": "300",
+                "templateId": "7",
+                "payload": {
+                    "headerText": buffetMenu["MenuNameE"],
+                    "elements": elements,
+                    "buttons": [{
+                        "name": "Ok, I'm ready to order",
+                        "action": {
+                            "url": "ready to order",
+                            "type": "quick_reply"
+                        }
+                    }]
+                }
+            }
+        };
+        agent.add(new Payload("PLATFORM_UNSPECIFIED", templateList));
+
+    }
+
 
 
 
@@ -679,7 +750,52 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
     }
 
+    async function createSessionEntityType(
+        projectId,
+        sessionId,
+        entityValues,
+        entityTypeDisplayName,
+        entityOverrideMode
+    ) {
+        // Imports the Dialogflow library
+        const {SessionEntityTypesClient} = require('dialogflow');
 
+        // Instantiates clients
+        const sessionEntityTypesClient = new SessionEntityTypesClient();
+        const sessionPath = sessionEntityTypesClient.projectAgentSessionPath(
+            projectId,
+            sessionId
+        );
+        const sessionEntityTypePath = sessionEntityTypesClient.projectAgentSessionEntityTypePath(
+            projectId,
+            sessionId,
+            entityTypeDisplayName
+        );
+
+        // Here we use the entity value as the only synonym.
+        const entities = [];
+        entityValues.forEach(entityValue => {
+            entities.push({
+                value: entityValue,
+                synonyms: [entityValue],
+            });
+        });
+
+        const sessionEntityTypeRequest = {
+            parent: sessionPath,
+            sessionEntityType: {
+                name: sessionEntityTypePath,
+                entityOverrideMode: entityOverrideMode,
+                entities: entities,
+            },
+        };
+
+        const [response] = await sessionEntityTypesClient.createSessionEntityType(
+            sessionEntityTypeRequest
+        );
+        console.log('SessionEntityType created:');
+        console.log(response);
+    }
 
 
     // // Uncomment and edit to make your own Google Assistant intent handler
@@ -705,6 +821,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     intentMap.set('EventDateTime', cuisine);
     intentMap.set('Cuisine', getMenus);
     intentMap.set('BuffetMenu', getMenuCategories);
+    intentMap.set('DishesCategory', getDishesByCategory);
 
     intentMap.set('Test01', example);
 
