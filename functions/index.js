@@ -379,9 +379,9 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                         ]
                     }
                 ];
-                // createSessionEntityType(projectId, sessionId, entities, "menus", "ENTITY_OVERRIDE_MODE_OVERRIDE");
                 payLoad.metadata.payload = carousel;
                 agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
+                // createSessionEntityType(projectId, sessionId, entities, "menus","ENTITY_OVERRIDE_MODE_OVERRIDE");
 
             }
         });
@@ -510,12 +510,12 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                 "contentType": "300",
                 "templateId": "7",
                 "payload": {
-                    "headerText": buffetMenu["MenuNameE"],
+                    "headerText": menuCategoryName + " Dishes",
                     "elements": elements,
                     "buttons": [{
                         "name": "Ok, I'm ready to order",
                         "action": {
-                            "url": "ready to order",
+                            "text": "ready to order",
                             "type": "quick_reply"
                         }
                     }]
@@ -523,6 +523,10 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             }
         };
         agent.add(new Payload("PLATFORM_UNSPECIFIED", templateList));
+
+    }
+
+    function getUserDishChoices(agent){
 
     }
 
@@ -758,10 +762,11 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         entityOverrideMode
     ) {
         // Imports the Dialogflow library
-        const {SessionEntityTypesClient} = require('dialogflow');
+        const dialogflow = require('@google-cloud/dialogflow');
 
         // Instantiates clients
-        const sessionEntityTypesClient = new SessionEntityTypesClient();
+        const sessionEntityTypesClient = new dialogflow.SessionEntityTypesClient();
+
         const sessionPath = sessionEntityTypesClient.projectAgentSessionPath(
             projectId,
             sessionId
@@ -797,7 +802,6 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         console.log(response);
     }
 
-
     // // Uncomment and edit to make your own Google Assistant intent handler
     // // uncomment `intentMap.set('your intent name here', googleAssistantHandler);`
     // // below to get this function to be run when a Dialogflow intent is matched
@@ -822,6 +826,8 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     intentMap.set('Cuisine', getMenus);
     intentMap.set('BuffetMenu', getMenuCategories);
     intentMap.set('DishesCategory', getDishesByCategory);
+    intentMap.set('OrderBuffet', getUserDishChoices);
+
 
     intentMap.set('Test01', example);
 
