@@ -25,7 +25,8 @@ var buffetMenu = {};
 var menuCategories = [];
 var dishes = [];
 var menuCategory = {};
-var categoriesOfDishes = {};
+var remainingDishCategories = [];
+var remainingDishChoices = -1;
 
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
@@ -471,7 +472,6 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
                         agent.add(buffetMenu["MenuNameE"] + " has the following categories of dish choices.\nClick on one to see more. ");
                         menuCategories.forEach( function(category, index){
-                            // agent.add( category["CategoryName"] + " dishes are:\n" + dishesStr);
                             agent.add(new Suggestion(category["CategoryName"]));
                         });
 
@@ -531,13 +531,15 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     }
 
     function showNumberOfDishChoices(agent){
+        remainingDishCategories = menuCategories.slice(0);
+        remainingDishChoices = buffetMenu["NoOfChoice"];
         agent.add( "For " + buffetMenu["MenuNameE"] + ", you can choose " + buffetMenu["NoOfChoice"] + " dishes.\nYou can select 1 dish per category.");
         agent.add(new Suggestion("Understood! I wish to start choosing the dishes"));
     }
 
     function showRemainingDishCategories(agent){
-        agent.add( "For " + buffetMenu["MenuNameE"] + ", you can choose " + buffetMenu["NoOfChoice"] + " dishes.\nClick on each category to select 1 dish per category.");
-        menuCategories.forEach( function(category, index){
+        agent.add( "You have " + remainingDishChoices + " remaining dish choices left.\nPlease select a remaining dish category");
+        remainingDishCategories.forEach( function(category, index){
             // agent.add( category["CategoryName"] + " dishes are:\n" + dishesStr);
             agent.add(new Suggestion(category["CategoryName"]));
         });
