@@ -530,14 +530,19 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
     }
 
-    function getUserDishChoices(agent){
+    function showNumberOfDishChoices(agent){
+        agent.add( "For " + buffetMenu["MenuNameE"] + ", you can choose " + buffetMenu["NoOfChoice"] + " dishes.\nYou can select 1 dish per category.");
+        agent.add(new Suggestion("Understood! I wish to start choosing the dishes"));
+    }
+
+    function showRemainingDishCategories(agent){
         agent.add( "For " + buffetMenu["MenuNameE"] + ", you can choose " + buffetMenu["NoOfChoice"] + " dishes.\nClick on each category to select 1 dish per category.");
         menuCategories.forEach( function(category, index){
             // agent.add( category["CategoryName"] + " dishes are:\n" + dishesStr);
             agent.add(new Suggestion(category["CategoryName"]));
         });
-
     }
+
 
 
 
@@ -763,53 +768,6 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
     }
 
-    async function createSessionEntityType(
-        projectId,
-        sessionId,
-        entityValues,
-        entityTypeDisplayName,
-        entityOverrideMode
-    ) {
-        // Imports the Dialogflow library
-        const dialogflow = require('@google-cloud/dialogflow');
-
-        // Instantiates clients
-        const sessionEntityTypesClient = new dialogflow.SessionEntityTypesClient();
-
-        const sessionPath = sessionEntityTypesClient.projectAgentSessionPath(
-            projectId,
-            sessionId
-        );
-        const sessionEntityTypePath = sessionEntityTypesClient.projectAgentSessionEntityTypePath(
-            projectId,
-            sessionId,
-            entityTypeDisplayName
-        );
-
-        // Here we use the entity value as the only synonym.
-        const entities = [];
-        entityValues.forEach(entityValue => {
-            entities.push({
-                value: entityValue,
-                synonyms: [entityValue],
-            });
-        });
-
-        const sessionEntityTypeRequest = {
-            parent: sessionPath,
-            sessionEntityType: {
-                name: sessionEntityTypePath,
-                entityOverrideMode: entityOverrideMode,
-                entities: entities,
-            },
-        };
-
-        const [response] = await sessionEntityTypesClient.createSessionEntityType(
-            sessionEntityTypeRequest
-        );
-        console.log('SessionEntityType created:');
-        console.log(response);
-    }
 
     // // Uncomment and edit to make your own Google Assistant intent handler
     // // uncomment `intentMap.set('your intent name here', googleAssistantHandler);`
@@ -835,7 +793,8 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     intentMap.set('Cuisine', getMenus);
     intentMap.set('BuffetMenu', getMenuCategories);
     intentMap.set('DishesCategory', getDishesByCategory);
-    intentMap.set('OrderBuffet', getUserDishChoices);
+    intentMap.set('OrderBuffet', showNumberOfDishChoices);
+    intentMap.set('PickDishCategory', showRemainingDishCategories);
 
 
     intentMap.set('Test01', example);
