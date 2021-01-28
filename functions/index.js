@@ -26,7 +26,7 @@ var menuCategories = [];
 var dishes = [];
 var menuCategory = {};
 var remainingDishCategories = [];
-var remainingDishChoices = -1;
+var remainingDishChoices = 0;
 
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
@@ -538,13 +538,60 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     }
 
     function showRemainingDishCategories(agent){
-        agent.add( "You have " + remainingDishChoices + " remaining dish choices left.\nPlease select a remaining dish category");
-        remainingDishCategories.forEach( function(category, index){
-            // agent.add( category["CategoryName"] + " dishes are:\n" + dishesStr);
-            agent.add(new Suggestion(category["CategoryName"]));
-        });
+        if (remainingDishChoices != 0) {
+            agent.add( "You have " + remainingDishChoices + " remaining dish choices left.\nPlease select a remaining dish category");
+            remainingDishCategories.forEach( function(category, index){
+                // agent.add( category["CategoryName"] + " dishes are:\n" + dishesStr);
+                agent.add(new Suggestion(category["CategoryName"]));
+            });
+        }
     }
 
+    function showDishesByCategory(agent) {
+        var menuCategoryName = agent.parameters.dishesCategory;
+        menuCategory = menuCategories.find( element => element["CategoryName"] === menuCategoryName);
+        console.log("Menu catgory is " + menuCategoryName);
+        console.log(JSON.stringify(menuCategory));
+
+        var elements = [];
+        var categoryDishes = dishes.filter(function(dish){
+            return dish.MenuCategoryID === menuCategory.MenuCategoryID;
+        });
+        categoryDishes.forEach(function(dish, index){
+            // Create elements
+            var element = {
+                "imgSrc": dish["DishImageUrl"],
+                "title": dish["DishNameE"],
+                "action": {
+                    "url": dish["DishImageUrl"],
+                    "type": "link"
+                }
+            }
+            elements.push(element);
+        });
+
+        var templateList = {
+            "message": "These are the " + menuCategoryName + " category dishes for " + buffetMenu["MenuNameE"] + "\nClick on one to see more.",
+            "platform": "kommunicate",
+            "metadata": {
+                "contentType": "300",
+                "templateId": "7",
+                "payload": {
+                    "headerText": menuCategoryName + " Dishes",
+                    "elements": elements,
+                    "buttons": [{
+                        "name": "Ok, I'm ready to order",
+                        "action": {
+                            "text": "ready to order",
+                            "type": "quick_reply"
+                        }
+                    }]
+                }
+            }
+        };
+        agent.add(new Payload("PLATFORM_UNSPECIFIED", templateList));
+
+    }
 
 
 
@@ -796,8 +843,8 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     intentMap.set('BuffetMenu', getMenuCategories);
     intentMap.set('DishesCategory', getDishesByCategory);
     intentMap.set('OrderBuffet', showNumberOfDishChoices);
-    intentMap.set('PickDishCategory', showRemainingDishCategories);
-
+    intentMap.set('StartDishSelectionProcess', showRemainingDishCategories);
+    intentMap.set('PickDishCategory', showDishesByCategory);
 
     intentMap.set('Test01', example);
 
