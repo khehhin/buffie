@@ -27,7 +27,11 @@ var dishes = [];
 var menuCategory = {};
 var remainingDishCategories = [];
 var remainingDishChoices = 0;
-
+var menuCategoryName = "";
+var categoryDishes = [];
+var selectedDishesByCategories = {};
+var selectedDishName = "";
+var selectedDish = {};
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
     const agent = new WebhookClient({ request, response });
@@ -538,23 +542,28 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     }
 
     function showRemainingDishCategories(agent){
-        if (remainingDishChoices != 0) {
+        if (remainingDishChoices > 0) {
             agent.add( "You have " + remainingDishChoices + " remaining dish choices left.\nPlease select a remaining dish category");
             remainingDishCategories.forEach( function(category, index){
                 // agent.add( category["CategoryName"] + " dishes are:\n" + dishesStr);
                 agent.add(new Suggestion(category["CategoryName"]));
             });
+        } else {
+            agent.add("These are the dishes you have selected: ");
+            for( var category in selectedDishesByCategories ){
+                agent.add(selectedDishesByCategories[category]["DishNameE"] + " for " + category );
+            }
         }
     }
 
     function showDishesByCategory(agent) {
-        var menuCategoryName = agent.parameters.dishesCategory;
+        menuCategoryName = agent.parameters.dishesCategory;
         menuCategory = menuCategories.find( element => element["CategoryName"] === menuCategoryName);
         console.log("Menu catgory is " + menuCategoryName);
         console.log(JSON.stringify(menuCategory));
 
         var elements = [];
-        var categoryDishes = dishes.filter(function(dish){
+        categoryDishes = dishes.filter(function(dish){
             return dish.MenuCategoryID === menuCategory.MenuCategoryID;
         });
         categoryDishes.forEach(function(dish, index){
@@ -564,7 +573,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                 "title": dish["DishNameE"],
                 "action": {
                     "url": dish["DishImageUrl"],
-                    "type": "link"
+                    "type": "quick_reply"
                 }
             }
             elements.push(element);
@@ -579,13 +588,15 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                 "payload": {
                     "headerText": menuCategoryName + " Dishes",
                     "elements": elements,
-                    "buttons": [{
-                        "name": "Ok, I'm ready to order",
-                        "action": {
-                            "text": "ready to order",
-                            "type": "quick_reply"
-                        }
-                    }]
+                    "buttons": [
+                        // {
+                        //     "name": "Ok, I'm ready to order",
+                        //     "action": {
+                        //         "text": "ready to order",
+                        //         "type": "quick_reply"
+                        //     }
+                        // }
+                    ]
                 }
             }
         };
@@ -593,7 +604,24 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
     }
 
+    function storePickedDishInDictionary(agent){
+        selectedDishName = agent.parameters.dishName;
+        selectedDish = categoryDishes.find( element => element["DishNameE"] === selectedDishName);
+        selectedDishesByCategories[menuCategoryName] = selectedDish;
+        agent.add("You have selected: " + selectedDishesByCategories[menuCategoryName]["DishNameE"] + " in " + menuCategoryName);
+        // agent.add("You have selected: " + selectedDishName + " in " + menuCategoryName);
 
+        remainingDishChoices--;
+        remainingDishCategories.splice(selectedDish);
+
+        // var index = remainingDishCategories.findIndex(function (category){
+        //     category.CategoryName === menuCategoryName;
+        // });
+        // remainingDishCategories.splice(index);
+
+        showRemainingDishCategories(agent);
+
+    }
 
 
 // ***** Boiler plate for Kommunicate's  Carousel ************
@@ -845,6 +873,8 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     intentMap.set('OrderBuffet', showNumberOfDishChoices);
     intentMap.set('StartDishSelectionProcess', showRemainingDishCategories);
     intentMap.set('PickDishCategory', showDishesByCategory);
+    intentMap.set('PickDish', storePickedDishInDictionary);
+    intentMap.set('PickRemainingDishCategory', showDishesByCategory);
 
     intentMap.set('Test01', example);
 
