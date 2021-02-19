@@ -612,12 +612,11 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         // agent.add("You have selected: " + selectedDishName + " in " + menuCategoryName);
 
         remainingDishChoices--;
-        remainingDishCategories.splice(selectedDish);
 
-        // var index = remainingDishCategories.findIndex(function (category){
-        //     category["CategoryName"] === menuCategoryName;
-        // });
-        // remainingDishCategories.splice(index);
+        var index = remainingDishCategories.findIndex(function (category){
+            category["CategoryName"] === menuCategoryName;
+        });
+        remainingDishCategories.splice(index, 1);
 
         showRemainingDishCategories(agent);
 
