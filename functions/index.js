@@ -491,7 +491,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     function getDishesByCategory(agent) {
         var menuCategoryName = agent.parameters.dishesCategory;
         menuCategory = menuCategories.find( element => element["CategoryName"] === menuCategoryName);
-        console.log("Menu catgory is " + menuCategoryName);
+        console.log("Menu category is " + menuCategoryName);
         console.log(JSON.stringify(menuCategory));
 
         var elements = [];
@@ -559,12 +559,12 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     function showDishesByCategory(agent) {
         menuCategoryName = agent.parameters.dishesCategory;
         menuCategory = menuCategories.find( element => element["CategoryName"] === menuCategoryName);
-        console.log("Menu catgory is " + menuCategoryName);
+        console.log("Menu category is " + menuCategoryName);
         console.log(JSON.stringify(menuCategory));
 
         var elements = [];
         categoryDishes = dishes.filter(function(dish){
-            return dish.MenuCategoryID === menuCategory.MenuCategoryID;
+            return dish["MenuCategoryID"] === menuCategory["MenuCategoryID"];
         });
         categoryDishes.forEach(function(dish, index){
             // Create elements
@@ -615,7 +615,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         remainingDishCategories.splice(selectedDish);
 
         // var index = remainingDishCategories.findIndex(function (category){
-        //     category.CategoryName === menuCategoryName;
+        //     category["CategoryName"] === menuCategoryName;
         // });
         // remainingDishCategories.splice(index);
 
