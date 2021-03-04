@@ -629,7 +629,61 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
 
     function createOrder(agent){
-        let orderJSON = JSON.stringify({
+
+        var orderSectionDetails = [
+            {
+                "OSMDID": "1431feae-a4af-412c-a415-23086628d2c2",
+                "OrderSectionMenuID": "097ad877-f106-496c-953b-2f022c4e17fb",
+                "CategoryID": "282dc22e-bc63-46d8-9fd4-87f530ec6de2",
+                "ItemDisplayOrder": 11,
+                "ItemNo": 11,
+                "ItemID": "443bfbb1-ef9b-46e1-bc68-f285d9adbaf7",
+                "ItemName": "DELIVERY & COLLECTION CHARGE",
+                "ItemRemark": "",
+                "ItemType": "GIU",
+                "Qty": 1,
+                "UnitPrice": 60,
+                "Amount": 60,
+                "Containers": ""
+            }
+        ];
+
+        var orderSectionDetail = {};
+        for( var category in selectedDishesByCategories ){
+            let menuCategory = menuCategories.find( element => element["CategoryName"] === category);
+
+            orderSectionDetail["OSMDID"] = buffetMenu["MenuGroup"]["MenuGroupID"];
+            orderSectionDetail["OrderSectionMenuID"] = buffetMenu["MenuID"];
+            orderSectionDetail["CategoryID"] = menuCategory["MenuCategoryID"];
+            orderSectionDetail["ItemDisplayOrder"] = 11;
+            orderSectionDetail["ItemNo"] = 11;
+            orderSectionDetail["ItemID"] = selectedDishesByCategories[category]["DishID"];
+            orderSectionDetail["ItemName"] = selectedDishesByCategories[category]["DishNameE"];
+            orderSectionDetail["ItemRemark"] = "";
+            orderSectionDetail["ItemType"] = "DD";
+            orderSectionDetail["Qty"] = numPax;
+            orderSectionDetail["UnitPrice"] = 20;
+            orderSectionDetail["Amount"] = 20;
+            orderSectionDetail["Containers"] = "";
+            orderSectionDetails.push(orderSectionDetail);
+        }
+
+        var orderSectionMenus = [
+            {
+                "OrderSectionMenuID": "",
+                "OrderSectionID": "",
+                "MenuID": buffetMenu["MenuID"],
+                "MenuName": buffetMenu["MenuNameE"],
+                "MenuDisplayOrder": 1,
+                "Pax": numPax,
+                "MenuPrice": 16,
+                "Amount": 480,
+                "IsPacket": false,
+                "OrderSectionMenuDetails": orderSectionDetails
+            }
+        ];
+
+        var orderJSON = JSON.stringify({
             "OrderID": "",
             "CompanyID": "7A4F7C36-A976-42B7-9700-9E519397E077 ",
             "CustomerID": "",
@@ -718,81 +772,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                         "BillingContactFax": "",
                         "BillingContactEmail": "tinlinhtun@gui-solutions.com"
                     },
-                    "OrderSectionMenus": [
-                        {
-                            "OrderSectionMenuID": "",
-                            "OrderSectionID": "",
-                            "MenuID": "d1b1a912-dfe3-4374-abb6-b73eccf3d30b",
-                            "MenuName": "(ONLINE) BASIL +",
-                            "MenuDisplayOrder": 1,
-                            "Pax": 30,
-                            "MenuPrice": 16,
-                            "Amount": 480,
-                            "IsPacket": false,
-                            "OrderSectionMenuDetails": [
-                                {
-                                    "OSMDID": "0f3b5554-c7e0-4b85-9b90-acd345cbfdd8",
-                                    "OrderSectionMenuID": "097ad877-f106-496c-953b-2f022c4e17fb",
-                                    "CategoryID": "70049c6c-09af-4a7f-85aa-bf1a9b8ffc21",
-                                    "ItemDisplayOrder": 9,
-                                    "ItemNo": 9,
-                                    "ItemID": "451608f5-b473-4a13-a697-4980344e74f9",
-                                    "ItemName": "Sea Coconut with Cocktail",
-                                    "ItemRemark": "",
-                                    "ItemType": "DD",
-                                    "Qty": 30,
-                                    "UnitPrice": 0,
-                                    "Amount": 0,
-                                    "Containers": ""
-                                },
-                                {
-                                    "OSMDID": "1431feae-a4af-412c-a415-23086628d2c2",
-                                    "OrderSectionMenuID": "097ad877-f106-496c-953b-2f022c4e17fb",
-                                    "CategoryID": "282dc22e-bc63-46d8-9fd4-87f530ec6de2",
-                                    "ItemDisplayOrder": 11,
-                                    "ItemNo": 11,
-                                    "ItemID": "443bfbb1-ef9b-46e1-bc68-f285d9adbaf7",
-                                    "ItemName": "DELIVERY & COLLECTION CHARGE",
-                                    "ItemRemark": "",
-                                    "ItemType": "GIU",
-                                    "Qty": 1,
-                                    "UnitPrice": 60,
-                                    "Amount": 60,
-                                    "Containers": ""
-                                },
-                                {
-                                    "OSMDID": "14688f11-a6bd-4c0b-b4c1-def57987725b",
-                                    "OrderSectionMenuID": "097ad877-f106-496c-953b-2f022c4e17fb",
-                                    "CategoryID": "8fe4ecea-e65b-4649-b879-05ce24cc2ff0",
-                                    "ItemDisplayOrder": 2,
-                                    "ItemNo": 2,
-                                    "ItemID": "63eb5235-cf1b-437f-90d0-4e431bdc489f",
-                                    "ItemName": "Fried Rice W Long Bean (vegetarian)",
-                                    "ItemRemark": "",
-                                    "ItemType": "DD",
-                                    "Qty": 30,
-                                    "UnitPrice": 0,
-                                    "Amount": 0,
-                                    "Containers": ""
-                                },
-                                {
-                                    "OSMDID": "2d320629-b146-4da2-b816-760442c06e80",
-                                    "OrderSectionMenuID": "097ad877-f106-496c-953b-2f022c4e17fb",
-                                    "CategoryID": null,
-                                    "ItemDisplayOrder": 0,
-                                    "ItemNo": 0,
-                                    "ItemID": "d1b1a912-dfe3-4374-abb6-b73eccf3d30b",
-                                    "ItemName": "(ONLINE) BASIL +",
-                                    "ItemRemark": "",
-                                    "ItemType": "M",
-                                    "Qty": 30,
-                                    "UnitPrice": 16,
-                                    "Amount": 480,
-                                    "Containers": ""
-                                }
-                            ]
-                        }
-                    ]
+                    "OrderSectionMenus": orderSectionMenus
                 }
             ]
         });
