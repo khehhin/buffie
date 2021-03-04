@@ -553,6 +553,9 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             for( var category in selectedDishesByCategories ){
                 agent.add(selectedDishesByCategories[category]["DishNameE"] + " for " + category );
             }
+            agent.add(new Suggestion("Ok, confirm my selections"));
+            agent.add(new Suggestion("No, I wish to re-select"));
+
         }
     }
 
