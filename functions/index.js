@@ -7,6 +7,7 @@ const {WebhookClient} = require('dialogflow-fulfillment');
 const {Card, Suggestion} = require('dialogflow-fulfillment');
 const {Payload} = require('dialogflow-fulfillment');
 const http = require('http');
+const qs = require('qs');
 
 process.env.DEBUG = 'dialogflow:*'; // enables lib debugging statements
 var sessionStr = "";
@@ -261,16 +262,16 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         menuType = agent.parameters.menuType;
         var cuisineType = menuTypes.find( element => element.MenuTypeName === menuType);
         // agent.add("MenuTypeID is " + cuisineType.MenuTypeID);
-        let bodyData = {
+        let bodyData = JSON.stringify({
             MenuTypeID: cuisineType.MenuTypeID,
             FunctionType: occassionType,
             Dietary: diet,
             EventDate: eventDate.toString(),
             NoOfPax: numPax.toString(),
             Budget: amount.toString()
-        };
+        });
 
-        console.log(JSON.stringify(bodyData));
+        console.log(bodyData);
 
         let options = {
             host: "40.119.212.144",
@@ -279,7 +280,8 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             // authentication headers
             headers: {
                 'Authorization': 'Basic ' + new Buffer.from('DH_Xruptive' + ':' + 'DH_XPT@2020').toString('base64'),
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(bodyData)
             }
         };
 
@@ -298,7 +300,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                     resolve(JSON.parse(str));
                 });
             });
-            req.write(JSON.stringify(bodyData));
+            req.write(bodyData);
             req.end();
         }).then(function (result) {
 
@@ -622,10 +624,226 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
         console.log("Index of " + menuCategoryName + " is " + index);
         remainingDishCategories.splice(index, 1);
-
         showRemainingDishCategories(agent);
+    }
+
+
+    function createOrder(agent){
+        let orderJSON = JSON.stringify({
+            "OrderID": "",
+            "CompanyID": "7A4F7C36-A976-42B7-9700-9E519397E077 ",
+            "CustomerID": "",
+            "NoOfSection": 1,
+            "FunctionType": "Baby Full Month",
+            "PaymentTerm": "Cash",
+            "DeliveryContactTitle": "Mr.",
+            "DeliveryContactFullName": "Jack",
+            "DeliveryContactSurname": "Lee",
+            "DeliveryContactCompanyName": "",
+            "DeliveryContactHandPhone1": "90909090",
+            "DeliveryContactHandPhone2": "",
+            "DeliveryContactHomePhone": "80808080",
+            "DeliveryContactOfficePhone": "",
+            "DeliveryContactFax": "",
+            "DeliveryContactEmail": "tinlinhtun@gui-solutions.com",
+            "DeliveryAddressUnit": "#00-0000",
+            "DeliveryAddressHaveLift": false,
+            "DeliveryAddressNoLift": false,
+            "DeliveryAddressBlock": "BLK BLK 431",
+            "DeliveryAddressBuilding": "",
+            "DeliveryAddressBuildingType": "H",
+            "DeliveryAddressStreetName": "CLEMENTI AVENUE 3",
+            "DeliveryAddressPostCode": "120431",
+            "FormattedDeliveryAddress": "",
+            "IsDeliveryAddressChanged": false,
+            "IsOnlineOrder": true,
+            "SalePerson": "00000000-0000-0000-0000-000000000000",
+            "IsNewCustomerOrder": true,
+            "HowToKnowUs": "",
+            "PaymentReferenceNumber": "ord00002",
+            "Customers": {
+                "CustomerID": "",
+                "Title": "Mr.",
+                "CustomerName": "Jack",
+                "Surname": "Lee",
+                "CompanyName": "",
+                "MailingAddressUnit": "#00-0000",
+                "MailingAddressBlock": "BLK BLK 431",
+                "MailingAddressBuilding": "",
+                "MailingAddressBuildingType": "H",
+                "MailingAddressStreetName": "CLEMENTI AVENUE 3",
+                "MailingAddressPostalCode": "120431",
+                "ContactMobile": "90909090",
+                "ContactHomePhone": "80808080",
+                "ContactOfficePhone": "",
+                "ContactFax": "",
+                "ContactEmail": "tinlinhtun@gui-solutions.com",
+                "HowToKnowUs": "Brochure",
+                "HowToKnowUsOthers": "",
+                "Memo": ""
+            },
+            "OrderSections": [
+                {
+                    "OrderSectionID": "",
+                    "OrderID": "",
+                    "LogisticNo": "",
+                    "KitchenCode": "H1",
+                    "OrginalKitchen": "",
+                    "DeliveryDate": "2020-06-10T08:30:00",
+                    "PreviousDeliveryDate": "2020-06-10T08:30:00",
+                    "DeliveryDateChangedOn": "2020-06-10T08:30:00",
+                    "KitchenTime": "2020-06-10T08:30:00",
+                    "ConfirmStatus": "PENDING",
+                    "InvoiceRemarks": "",
+                    "DriverRemarks": "",
+                    "KitchenRemarks": "",
+                    "PackingRemark": "",
+                    "AllMenuType": "",
+                    "DaySerial": "",
+                    "TotalPax": 30,
+                    "MenuCount": 1,
+                    "OrderInvoices": {
+                        "OrderInvoiceID": "",
+                        "OrderSectionID": "",
+                        "OrderTotalAmount": 214,
+                        "GstAmount": 14,
+                        "InvoiceAmount": 200,
+                        "IsBillingAddressDifferent": false,
+                        "BillingContactTitle": "Mr.",
+                        "BillingContactFullName": "TEST, PLS IGNORE",
+                        "BillingContactCompanyName": "",
+                        "BillingContactHandPhone": "90909090",
+                        "BillingContactHomePhone": "80808080",
+                        "BillingContactOfficePhone": "",
+                        "BillingContactFax": "",
+                        "BillingContactEmail": "tinlinhtun@gui-solutions.com"
+                    },
+                    "OrderSectionMenus": [
+                        {
+                            "OrderSectionMenuID": "",
+                            "OrderSectionID": "",
+                            "MenuID": "d1b1a912-dfe3-4374-abb6-b73eccf3d30b",
+                            "MenuName": "(ONLINE) BASIL +",
+                            "MenuDisplayOrder": 1,
+                            "Pax": 30,
+                            "MenuPrice": 16,
+                            "Amount": 480,
+                            "IsPacket": false,
+                            "OrderSectionMenuDetails": [
+                                {
+                                    "OSMDID": "0f3b5554-c7e0-4b85-9b90-acd345cbfdd8",
+                                    "OrderSectionMenuID": "097ad877-f106-496c-953b-2f022c4e17fb",
+                                    "CategoryID": "70049c6c-09af-4a7f-85aa-bf1a9b8ffc21",
+                                    "ItemDisplayOrder": 9,
+                                    "ItemNo": 9,
+                                    "ItemID": "451608f5-b473-4a13-a697-4980344e74f9",
+                                    "ItemName": "Sea Coconut with Cocktail",
+                                    "ItemRemark": "",
+                                    "ItemType": "DD",
+                                    "Qty": 30,
+                                    "UnitPrice": 0,
+                                    "Amount": 0,
+                                    "Containers": ""
+                                },
+                                {
+                                    "OSMDID": "1431feae-a4af-412c-a415-23086628d2c2",
+                                    "OrderSectionMenuID": "097ad877-f106-496c-953b-2f022c4e17fb",
+                                    "CategoryID": "282dc22e-bc63-46d8-9fd4-87f530ec6de2",
+                                    "ItemDisplayOrder": 11,
+                                    "ItemNo": 11,
+                                    "ItemID": "443bfbb1-ef9b-46e1-bc68-f285d9adbaf7",
+                                    "ItemName": "DELIVERY & COLLECTION CHARGE",
+                                    "ItemRemark": "",
+                                    "ItemType": "GIU",
+                                    "Qty": 1,
+                                    "UnitPrice": 60,
+                                    "Amount": 60,
+                                    "Containers": ""
+                                },
+                                {
+                                    "OSMDID": "14688f11-a6bd-4c0b-b4c1-def57987725b",
+                                    "OrderSectionMenuID": "097ad877-f106-496c-953b-2f022c4e17fb",
+                                    "CategoryID": "8fe4ecea-e65b-4649-b879-05ce24cc2ff0",
+                                    "ItemDisplayOrder": 2,
+                                    "ItemNo": 2,
+                                    "ItemID": "63eb5235-cf1b-437f-90d0-4e431bdc489f",
+                                    "ItemName": "Fried Rice W Long Bean (vegetarian)",
+                                    "ItemRemark": "",
+                                    "ItemType": "DD",
+                                    "Qty": 30,
+                                    "UnitPrice": 0,
+                                    "Amount": 0,
+                                    "Containers": ""
+                                },
+                                {
+                                    "OSMDID": "2d320629-b146-4da2-b816-760442c06e80",
+                                    "OrderSectionMenuID": "097ad877-f106-496c-953b-2f022c4e17fb",
+                                    "CategoryID": null,
+                                    "ItemDisplayOrder": 0,
+                                    "ItemNo": 0,
+                                    "ItemID": "d1b1a912-dfe3-4374-abb6-b73eccf3d30b",
+                                    "ItemName": "(ONLINE) BASIL +",
+                                    "ItemRemark": "",
+                                    "ItemType": "M",
+                                    "Qty": 30,
+                                    "UnitPrice": 16,
+                                    "Amount": 480,
+                                    "Containers": ""
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        });
+
+
+        let options = {
+            host: "40.119.212.144",
+            path: "/beta_delihub/api/order/CreateOrder_V2",
+            method: 'POST',
+            // authentication headers
+            headers: {
+                'Authorization': 'Basic ' + new Buffer.from('DH_Xruptive' + ':' + 'DH_XPT@2020').toString('base64'),
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(orderJSON)
+            }
+        };
+
+        return new Promise(function(resolve, reject) {
+            // Do async job
+            var req = http.request(options, function (response) {
+                var str = '';
+                response.on('error', function (err) {
+                    reject(err);
+                });
+                response.on('data', function (chunk) {
+                    str += chunk;
+                });
+                response.on('end', function () {
+                    console.log("Ended, result is : " + str);
+                    resolve(JSON.parse(str));
+                });
+            });
+            // req.write(JSON.stringify(orderJSON));
+            req.write(orderJSON);
+            req.end();
+        }).then(function (result) {
+
+            if (result["Message"]) {
+                agent.add(result["Message"]);
+            } else {
+                let statusMessage = result["StatusMessage"];
+                agent.add(statusMessage);
+                if (statusMessage == "Success") {
+                    agent.add("Order ID is: " + result["OrderID"]);
+                }
+            }
+        });
 
     }
+
+
 
 
 // ***** Boiler plate for Kommunicate's  Carousel ************
@@ -879,6 +1097,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     intentMap.set('PickDishCategory', showDishesByCategory);
     intentMap.set('PickDish', storePickedDishInDictionary);
     intentMap.set('PickRemainingDishCategory', showDishesByCategory);
+    intentMap.set('ConfirmDishesSelections', createOrder);
 
     intentMap.set('Test01', example);
 
