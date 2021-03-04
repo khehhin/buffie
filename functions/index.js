@@ -7,7 +7,12 @@ const {WebhookClient} = require('dialogflow-fulfillment');
 const {Card, Suggestion} = require('dialogflow-fulfillment');
 const {Payload} = require('dialogflow-fulfillment');
 const http = require('http');
+const qs = require('qs');
+
 process.env.DEBUG = 'dialogflow:*'; // enables lib debugging statements
+var sessionStr = "";
+var projectId = "";
+var sessionId = "";
 var menuTypes = [];
 var occassionType = "";
 var numPax = 0;
@@ -16,12 +21,33 @@ var amount = 0.0;
 var eventDate = "";
 var eventTime = "";
 var menuType = "";
-
+var menus = [];
+var buffetMenu = {};
+var menuCategories = [];
+var dishes = [];
+var menuCategory = {};
+var remainingDishCategories = [];
+var remainingDishChoices = 0;
+var menuCategoryName = "";
+var categoryDishes = [];
+var selectedDishesByCategories = {};
+var selectedDishName = "";
+var selectedDish = {};
 
 exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, response) => {
     const agent = new WebhookClient({ request, response });
+
     console.log('Dialogflow Request headers: ' + JSON.stringify(request.headers));
     console.log('Dialogflow Request body: ' + JSON.stringify(request.body));
+
+    sessionStr = JSON.stringify(request.body.session);
+    console.log('Dialogflow Request Session: ' + sessionStr);
+    var words = sessionStr.split("/");
+    sessionId = words[4];
+    projectId = words[1];
+    console.log('Dialogflow sessionId: ' + sessionId);
+    console.log('Dialogflow projectId: ' + projectId);
+
 
     function welcome(agent) {
         // Get List of Cuisines (MenuTypes)
@@ -236,16 +262,16 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
         menuType = agent.parameters.menuType;
         var cuisineType = menuTypes.find( element => element.MenuTypeName === menuType);
         // agent.add("MenuTypeID is " + cuisineType.MenuTypeID);
-        let bodyData = {
+        let bodyData = JSON.stringify({
             MenuTypeID: cuisineType.MenuTypeID,
             FunctionType: occassionType,
             Dietary: diet,
             EventDate: eventDate.toString(),
             NoOfPax: numPax.toString(),
             Budget: amount.toString()
-        };
+        });
 
-        console.log(JSON.stringify(bodyData));
+        console.log(bodyData);
 
         let options = {
             host: "40.119.212.144",
@@ -254,7 +280,8 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
             // authentication headers
             headers: {
                 'Authorization': 'Basic ' + new Buffer.from('DH_Xruptive' + ':' + 'DH_XPT@2020').toString('base64'),
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(bodyData)
             }
         };
 
@@ -273,7 +300,7 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                     resolve(JSON.parse(str));
                 });
             });
-            req.write(JSON.stringify(bodyData));
+            req.write(bodyData);
             req.end();
         }).then(function (result) {
 
@@ -330,13 +357,13 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                                 }
                             },
                             {
-                                "name": "Place an order",
+                                "name": "View dishes",
                                 "action": {
                                     "type": "quickReply",
                                     "payload": {
                                         "message": menu.MenuNameE,
                                         "replyMetadata": {
-                                            "key1": "value1"
+                                            "menuId": menu.MenuID
                                         }
                                     }
                                 }
@@ -344,15 +371,460 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
                         ]
                     };
                     carousel.push(card);
+                    menus.push(menu);
                 };
+                var entities = [];
 
+                menus.forEach( function(menu){
+                    var entity = {
+                        "value": menu["MenuNameE"],
+                        "synonyms": [menu["MenuNameE"]]
+                    }
+                    entities.push(entity);
+                });
+
+                var sessionEntityTypes = [
+                        {
+                            "name": sessionStr + "/entityTypes/menus",
+                            "entities": entities,
+                            "entityOverrideMode":"ENTITY_OVERRIDE_MODE_OVERRIDE"
+                        }
+                    ];
                 payLoad.metadata.payload = carousel;
-                agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad));
+                agent.add(new Payload("PLATFORM_UNSPECIFIED", payLoad),{"sessionEntityTypes": sessionEntityTypes});
+                console.log("sessionEntityTypes: " + JSON.stringify(sessionEntityTypes));
+
             }
-
-
         });
     }
+
+
+    function getMenuCategories(agent){
+        var menuName = agent.parameters.menu;
+        buffetMenu = menus.find( element => element.MenuNameE === menuName);
+        agent.add("MenuID of " + menuName + " is " + buffetMenu.MenuID);
+
+        let options = {
+            host: "40.119.212.144",
+            path: "/beta_delihub/api/Menu/GetMenuDetails?MenuId=" + buffetMenu.MenuID ,
+            method: 'GET',
+            // authentication headers
+            headers: {
+                'Authorization': 'Basic ' + new Buffer.from('DH_Xruptive' + ':' + 'DH_XPT@2020').toString('base64'),
+                'Content-Type': 'application/json'
+            }
+        };
+
+        return new Promise(function(resolve, reject) {
+            // Do async job
+            var req = http.request(options, function (response) {
+                var str = '';
+                response.on('error', function (err) {
+                    reject(err);
+                });
+                response.on('data', function (chunk) {
+                    str += chunk;
+                });
+                response.on('end', function () {
+                    console.log("Ended, GetMenuDetails result is : " + str);
+                    resolve(JSON.parse(str));
+                });
+            });
+            req.end();
+        }).then(function (result) {
+
+            if (result["Message"]) {
+                agent.add(result["Message"]);
+            } else {
+                menuCategories = result["MenuCategories"];
+                // agent.add(JSON.stringify(menuCategories));
+
+                // Get Menu Dishes here
+                let options = {
+                    host: "40.119.212.144",
+                    path: "/beta_delihub/api/Menu/GetMenuDishes?MenuId=" + buffetMenu.MenuID ,
+                    method: 'GET',
+                    // authentication headers
+                    headers: {
+                        'Authorization': 'Basic ' + new Buffer.from('DH_Xruptive' + ':' + 'DH_XPT@2020').toString('base64'),
+                        'Content-Type': 'application/json'
+                    }
+                };
+                return new Promise(function(resolve, reject) {
+                    // Do async job
+                    var req = http.request(options, function (response) {
+                        var str = '';
+                        response.on('error', function (err) {
+                            reject(err);
+                        });
+                        response.on('data', function (chunk) {
+                            str += chunk;
+                        });
+                        response.on('end', function () {
+                            console.log("Ended, GetMenuDishes result is : " + str);
+                            resolve(JSON.parse(str));
+                        });
+                    });
+                    req.end();
+                }).then(function (result) {
+                    if (result["Message"]) {
+                        agent.add(result["Message"]);
+                    } else {
+                        for(var i=0; i < result.length; i++) {
+                            var dish = result[i];
+                            dishes.push(dish);
+                        }
+                        // agent.add(JSON.stringify(dishes));
+
+                        agent.add(buffetMenu["MenuNameE"] + " has the following categories of dish choices.\nClick on one to see more. ");
+                        menuCategories.forEach( function(category, index){
+                            agent.add(new Suggestion(category["CategoryName"]));
+                        });
+
+                        // agent.add(new Payload("PLATFORM_UNSPECIFIED", templateList));
+
+                    }
+                });
+
+            }
+        });
+    }
+
+    function getDishesByCategory(agent) {
+        var menuCategoryName = agent.parameters.dishesCategory;
+        menuCategory = menuCategories.find( element => element["CategoryName"] === menuCategoryName);
+        console.log("Menu category is " + menuCategoryName);
+        console.log(JSON.stringify(menuCategory));
+
+        var elements = [];
+        var categoryDishes = dishes.filter(function(dish){
+            return dish.MenuCategoryID === menuCategory.MenuCategoryID;
+        });
+        categoryDishes.forEach(function(dish, index){
+            // Create elements
+            var element = {
+                "imgSrc": dish["DishImageUrl"],
+                "title": dish["DishNameE"],
+                "action": {
+                    "url": dish["DishImageUrl"],
+                    "type": "link"
+                }
+            }
+            elements.push(element);
+        });
+
+        var templateList = {
+            "message": "These are the " + menuCategoryName + " category dishes for " + buffetMenu["MenuNameE"] + "\nClick on one to see more.",
+            "platform": "kommunicate",
+            "metadata": {
+                "contentType": "300",
+                "templateId": "7",
+                "payload": {
+                    "headerText": menuCategoryName + " Dishes",
+                    "elements": elements,
+                    "buttons": [{
+                        "name": "Ok, I'm ready to order",
+                        "action": {
+                            "text": "ready to order",
+                            "type": "quick_reply"
+                        }
+                    }]
+                }
+            }
+        };
+        agent.add(new Payload("PLATFORM_UNSPECIFIED", templateList));
+
+    }
+
+    function showNumberOfDishChoices(agent){
+        remainingDishCategories = menuCategories.slice(0);
+        remainingDishChoices = buffetMenu["NoOfChoice"];
+        agent.add( "For " + buffetMenu["MenuNameE"] + ", you can choose " + buffetMenu["NoOfChoice"] + " dishes.\nYou can select 1 dish per category.");
+        agent.add(new Suggestion("Understood! I wish to start choosing the dishes"));
+    }
+
+    function showRemainingDishCategories(agent){
+        if (remainingDishChoices > 0) {
+            agent.add( "You have " + remainingDishChoices + " remaining dish choices left.\nPlease select a remaining dish category");
+            remainingDishCategories.forEach( function(category, index){
+                // agent.add( category["CategoryName"] + " dishes are:\n" + dishesStr);
+                agent.add(new Suggestion(category["CategoryName"]));
+            });
+        } else {
+            agent.add("These are the dishes you have selected: ");
+            for( var category in selectedDishesByCategories ){
+                agent.add(selectedDishesByCategories[category]["DishNameE"] + " for " + category );
+            }
+            agent.add(new Suggestion("Ok, confirm my selections"));
+            agent.add(new Suggestion("No, I wish to re-select"));
+
+        }
+    }
+
+    function showDishesByCategory(agent) {
+        menuCategoryName = agent.parameters.dishesCategory;
+        menuCategory = menuCategories.find( element => element["CategoryName"] === menuCategoryName);
+        console.log("Menu category is " + menuCategoryName);
+        console.log(JSON.stringify(menuCategory));
+
+        var elements = [];
+        categoryDishes = dishes.filter(function(dish){
+            return dish["MenuCategoryID"] === menuCategory["MenuCategoryID"];
+        });
+        categoryDishes.forEach(function(dish, index){
+            // Create elements
+            var element = {
+                "imgSrc": dish["DishImageUrl"],
+                "title": dish["DishNameE"],
+                "action": {
+                    "url": dish["DishImageUrl"],
+                    "type": "quick_reply"
+                }
+            }
+            elements.push(element);
+        });
+
+        var templateList = {
+            "message": "These are the " + menuCategoryName + " category dishes for " + buffetMenu["MenuNameE"] + "\nClick on one to see more.",
+            "platform": "kommunicate",
+            "metadata": {
+                "contentType": "300",
+                "templateId": "7",
+                "payload": {
+                    "headerText": menuCategoryName + " Dishes",
+                    "elements": elements,
+                    "buttons": [
+                        // {
+                        //     "name": "Ok, I'm ready to order",
+                        //     "action": {
+                        //         "text": "ready to order",
+                        //         "type": "quick_reply"
+                        //     }
+                        // }
+                    ]
+                }
+            }
+        };
+        agent.add(new Payload("PLATFORM_UNSPECIFIED", templateList));
+
+    }
+
+    function storePickedDishInDictionary(agent){
+        selectedDishName = agent.parameters.dishName;
+        selectedDish = categoryDishes.find( element => element["DishNameE"] === selectedDishName);
+        selectedDishesByCategories[menuCategoryName] = selectedDish;
+        agent.add("You have selected: " + selectedDishesByCategories[menuCategoryName]["DishNameE"] + " in " + menuCategoryName);
+        // agent.add("You have selected: " + selectedDishName + " in " + menuCategoryName);
+
+        remainingDishChoices--;
+
+        var index = remainingDishCategories.findIndex(function(category){
+            return category["CategoryName"] === menuCategoryName;
+        });
+
+        console.log("Index of " + menuCategoryName + " is " + index);
+        remainingDishCategories.splice(index, 1);
+        showRemainingDishCategories(agent);
+    }
+
+
+    function createOrder(agent){
+
+        var orderSectionDetails = [
+            {
+                "OSMDID": "1431feae-a4af-412c-a415-23086628d2c2",
+                "OrderSectionMenuID": "097ad877-f106-496c-953b-2f022c4e17fb",
+                "CategoryID": "282dc22e-bc63-46d8-9fd4-87f530ec6de2",
+                "ItemDisplayOrder": 11,
+                "ItemNo": 11,
+                "ItemID": "443bfbb1-ef9b-46e1-bc68-f285d9adbaf7",
+                "ItemName": "DELIVERY & COLLECTION CHARGE",
+                "ItemRemark": "",
+                "ItemType": "GIU",
+                "Qty": 1,
+                "UnitPrice": 60,
+                "Amount": 60,
+                "Containers": ""
+            }
+        ];
+
+        var orderSectionDetail = {};
+        for( var category in selectedDishesByCategories ){
+            let menuCategory = menuCategories.find( element => element["CategoryName"] === category);
+
+            orderSectionDetail["OSMDID"] = buffetMenu["MenuGroup"]["MenuGroupID"];
+            orderSectionDetail["OrderSectionMenuID"] = buffetMenu["MenuID"];
+            orderSectionDetail["CategoryID"] = menuCategory["MenuCategoryID"];
+            orderSectionDetail["ItemDisplayOrder"] = 11;
+            orderSectionDetail["ItemNo"] = 11;
+            orderSectionDetail["ItemID"] = selectedDishesByCategories[category]["DishID"];
+            orderSectionDetail["ItemName"] = selectedDishesByCategories[category]["DishNameE"];
+            orderSectionDetail["ItemRemark"] = "";
+            orderSectionDetail["ItemType"] = "DD";
+            orderSectionDetail["Qty"] = numPax;
+            orderSectionDetail["UnitPrice"] = 20;
+            orderSectionDetail["Amount"] = 20;
+            orderSectionDetail["Containers"] = "";
+            orderSectionDetails.push(orderSectionDetail);
+        }
+
+        var orderSectionMenus = [
+            {
+                "OrderSectionMenuID": "",
+                "OrderSectionID": "",
+                "MenuID": buffetMenu["MenuID"],
+                "MenuName": buffetMenu["MenuNameE"],
+                "MenuDisplayOrder": 1,
+                "Pax": numPax,
+                "MenuPrice": 16,
+                "Amount": 480,
+                "IsPacket": false,
+                "OrderSectionMenuDetails": orderSectionDetails
+            }
+        ];
+
+        var orderJSON = JSON.stringify({
+            "OrderID": "",
+            "CompanyID": "7A4F7C36-A976-42B7-9700-9E519397E077 ",
+            "CustomerID": "",
+            "NoOfSection": 1,
+            "FunctionType": "Baby Full Month",
+            "PaymentTerm": "Cash",
+            "DeliveryContactTitle": "Mr.",
+            "DeliveryContactFullName": "Jack",
+            "DeliveryContactSurname": "Lee",
+            "DeliveryContactCompanyName": "",
+            "DeliveryContactHandPhone1": "90909090",
+            "DeliveryContactHandPhone2": "",
+            "DeliveryContactHomePhone": "80808080",
+            "DeliveryContactOfficePhone": "",
+            "DeliveryContactFax": "",
+            "DeliveryContactEmail": "tinlinhtun@gui-solutions.com",
+            "DeliveryAddressUnit": "#00-0000",
+            "DeliveryAddressHaveLift": false,
+            "DeliveryAddressNoLift": false,
+            "DeliveryAddressBlock": "BLK BLK 431",
+            "DeliveryAddressBuilding": "",
+            "DeliveryAddressBuildingType": "H",
+            "DeliveryAddressStreetName": "CLEMENTI AVENUE 3",
+            "DeliveryAddressPostCode": "120431",
+            "FormattedDeliveryAddress": "",
+            "IsDeliveryAddressChanged": false,
+            "IsOnlineOrder": true,
+            "SalePerson": "00000000-0000-0000-0000-000000000000",
+            "IsNewCustomerOrder": true,
+            "HowToKnowUs": "",
+            "PaymentReferenceNumber": "ord00002",
+            "Customers": {
+                "CustomerID": "",
+                "Title": "Mr.",
+                "CustomerName": "Jack",
+                "Surname": "Lee",
+                "CompanyName": "",
+                "MailingAddressUnit": "#00-0000",
+                "MailingAddressBlock": "BLK BLK 431",
+                "MailingAddressBuilding": "",
+                "MailingAddressBuildingType": "H",
+                "MailingAddressStreetName": "CLEMENTI AVENUE 3",
+                "MailingAddressPostalCode": "120431",
+                "ContactMobile": "90909090",
+                "ContactHomePhone": "80808080",
+                "ContactOfficePhone": "",
+                "ContactFax": "",
+                "ContactEmail": "tinlinhtun@gui-solutions.com",
+                "HowToKnowUs": "Brochure",
+                "HowToKnowUsOthers": "",
+                "Memo": ""
+            },
+            "OrderSections": [
+                {
+                    "OrderSectionID": "",
+                    "OrderID": "",
+                    "LogisticNo": "",
+                    "KitchenCode": "H1",
+                    "OrginalKitchen": "",
+                    "DeliveryDate": "2020-06-10T08:30:00",
+                    "PreviousDeliveryDate": "2020-06-10T08:30:00",
+                    "DeliveryDateChangedOn": "2020-06-10T08:30:00",
+                    "KitchenTime": "2020-06-10T08:30:00",
+                    "ConfirmStatus": "PENDING",
+                    "InvoiceRemarks": "",
+                    "DriverRemarks": "",
+                    "KitchenRemarks": "",
+                    "PackingRemark": "",
+                    "AllMenuType": "",
+                    "DaySerial": "",
+                    "TotalPax": 30,
+                    "MenuCount": 1,
+                    "OrderInvoices": {
+                        "OrderInvoiceID": "",
+                        "OrderSectionID": "",
+                        "OrderTotalAmount": 214,
+                        "GstAmount": 14,
+                        "InvoiceAmount": 200,
+                        "IsBillingAddressDifferent": false,
+                        "BillingContactTitle": "Mr.",
+                        "BillingContactFullName": "TEST, PLS IGNORE",
+                        "BillingContactCompanyName": "",
+                        "BillingContactHandPhone": "90909090",
+                        "BillingContactHomePhone": "80808080",
+                        "BillingContactOfficePhone": "",
+                        "BillingContactFax": "",
+                        "BillingContactEmail": "tinlinhtun@gui-solutions.com"
+                    },
+                    "OrderSectionMenus": orderSectionMenus
+                }
+            ]
+        });
+
+
+        let options = {
+            host: "40.119.212.144",
+            path: "/beta_delihub/api/order/CreateOrder_V2",
+            method: 'POST',
+            // authentication headers
+            headers: {
+                'Authorization': 'Basic ' + new Buffer.from('DH_Xruptive' + ':' + 'DH_XPT@2020').toString('base64'),
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(orderJSON)
+            }
+        };
+
+        return new Promise(function(resolve, reject) {
+            // Do async job
+            var req = http.request(options, function (response) {
+                var str = '';
+                response.on('error', function (err) {
+                    reject(err);
+                });
+                response.on('data', function (chunk) {
+                    str += chunk;
+                });
+                response.on('end', function () {
+                    console.log("Ended, result is : " + str);
+                    resolve(JSON.parse(str));
+                });
+            });
+            // req.write(JSON.stringify(orderJSON));
+            req.write(orderJSON);
+            req.end();
+        }).then(function (result) {
+
+            if (result["Message"]) {
+                agent.add(result["Message"]);
+            } else {
+                let statusMessage = result["StatusMessage"];
+                agent.add(statusMessage);
+                if (statusMessage == "Success") {
+                    agent.add("Order ID is: " + result["OrderID"]);
+                }
+            }
+        });
+
+    }
+
+
+
 
 // ***** Boiler plate for Kommunicate's  Carousel ************
     function example(agent) {
@@ -576,8 +1048,6 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     }
 
 
-
-
     // // Uncomment and edit to make your own Google Assistant intent handler
     // // uncomment `intentMap.set('your intent name here', googleAssistantHandler);`
     // // below to get this function to be run when a Dialogflow intent is matched
@@ -600,6 +1070,14 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
     intentMap.set('Budget', whenDate);
     intentMap.set('EventDateTime', cuisine);
     intentMap.set('Cuisine', getMenus);
+    intentMap.set('BuffetMenu', getMenuCategories);
+    intentMap.set('DishesCategory', getDishesByCategory);
+    intentMap.set('OrderBuffet', showNumberOfDishChoices);
+    intentMap.set('StartDishSelectionProcess', showRemainingDishCategories);
+    intentMap.set('PickDishCategory', showDishesByCategory);
+    intentMap.set('PickDish', storePickedDishInDictionary);
+    intentMap.set('PickRemainingDishCategory', showDishesByCategory);
+    intentMap.set('ConfirmDishesSelections', createOrder);
 
     intentMap.set('Test01', example);
 
