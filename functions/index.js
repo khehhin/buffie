@@ -613,9 +613,11 @@ exports.dialogflowFirebaseFulfillment = functions.https.onRequest((request, resp
 
         remainingDishChoices--;
 
-        var index = remainingDishCategories.findIndex(function (category){
-            category["CategoryName"] === menuCategoryName;
+        var index = remainingDishCategories.findIndex(function(category){
+            return category["CategoryName"] === menuCategoryName;
         });
+
+        console.log("Index of " + menuCategoryName + " is " + index);
         remainingDishCategories.splice(index, 1);
 
         showRemainingDishCategories(agent);
